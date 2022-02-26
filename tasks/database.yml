@@ -1,0 +1,52 @@
+---
+
+# wallabag uses db_name: wallabag and db_user: taha
+# ttrss uses db_name: ttrss and db_user: ttrss
+
+
+- name: "Create pgsql database user {{ DB_USER }}"
+  community.postgresql.postgresql_user:
+    name: "{{ DB_USER }}"
+    password: "{{ DB_PASSWORD }}"
+    # https://dba.stackexchange.com/a/263911
+    role_attr_flags: CREATEDB,CREATEROLE,INHERIT,NOSUPERUSER,LOGIN
+    encrypted: yes
+    state: present
+    expires: infinity
+    port: "{{ DB_PORT }}"
+  become: true
+  become_user: "{{ db_admin_username }}" # defined in group_vars and postgres/defaults
+
+# check what pgsql databases exist
+# https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_info_module.html
+- name: Collect info on all existing pgsql databases
+  community.postgresql.postgresql_info:
+    filter:
+      - "databases"
+  become: true
+  become_user: "{{ db_admin_username }}"
+  register: netbox_psql_info
+
+- name: "Create empty  database {{ DB_NAME }} if not already existing"
+  community.postgresql.postgresql_db:
+    name: "{{ DB_NAME }}"
+    encoding: UTF-8
+    state: present
+    owner: "{{ DB_USER }}"
+    port: "{{ DB_PORT }}"
+  become: true
+  become_user: "{{ db_admin_username }}"
+  when: "DB_NAME not in netbox_psql_info.databases"
+
+- name: "Grant our pgsql user {{ DB_USER }} ALL privileges on database {{ DB_NAME }}"
+  community.postgresql.postgresql_user:
+    db: "{{ DB_NAME }}"
+    priv: ALL
+    name: "{{ DB_USER }}"
+    password: "{{ DB_PASSWORD }}"
+    encrypted: yes
+    state: present
+    expires: infinity
+    port: "{{ DB_PORT }}"
+  become: true
+  become_user: "{{ db_admin_username }}" # defined in group_vars

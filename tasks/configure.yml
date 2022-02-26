@@ -1,0 +1,11 @@
+---
+
+# https://netbox.readthedocs.io/en/stable/installation/3-netbox/#configuration
+
+- name: Configure Netbox
+  ansible.builtin.template:
+    src: configuration.py.j2
+    dest: "{{ netbox.base_path }}/netbox/netbox/configuration.py"
+    owner: "{{ wallatinyarchive.user.netbox.name }}"
+    group: "{{ wallatinyarchive.user.netbox.name }}"
+    mode: ug=rw

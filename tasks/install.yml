@@ -1,0 +1,78 @@
+---
+
+# https://askubuntu.com/a/784627
+# https://github.com/python-pillow/Pillow/issues/1457#issuecomment-203583883
+- name: Install dependencies
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - libxml2-dev
+      - libxslt1-dev
+      - libffi-dev
+      - libpq-dev
+      - libssl-dev
+      - zlib1g-dev
+      - libjpeg-dev
+    state: present
+
+- name: "Download the Netbox tarball v{{ netbox.version }}"
+  ansible.builtin.get_url:
+    url: "https://github.com/netbox-community/netbox/archive/refs/tags/v{{ netbox.version }}.tar.gz"
+    dest: "{{ netbox.tarball_path }}"
+    owner: "{{ ansible_env.USER }}"
+    group: "{{ ansible_env.USER }}"
+    mode: u=rw,go=r
+  register: netbox_installer
+
+- name: "Ensure {{ netbox.base_path }} exists"
+  ansible.builtin.file:
+    path: "{{ netbox.base_path }}"
+    state: directory
+    owner: "{{ wallatinyarchive.user.netbox.name }}"
+    group: "{{ wallatinyarchive.user.netbox.name }}"
+  register: netbox_dir
+
+
+- name: Unpack Netbox and setup Python venv
+  when: netbox_installer.changed or netbox_dir.changed
+  block:
+
+    - name: "Unpack Netbox tarball into {{ netbox.base_path }}"
+      ansible.builtin.unarchive:
+        src: "{{ netbox_installer.dest }}"
+        dest: "{{ netbox.base_path }}"
+        remote_src: yes
+        owner: "{{ wallatinyarchive.user.netbox.name }}"
+        group: "{{ wallatinyarchive.user.netbox.name }}"
+        extra_opts: "--strip-components=1"
+
+    # make sure the python venv we create uses right python3.x version
+    # https://docs.python.org/3/library/venv.html
+    - name: "Create Python{{ ppa_deadsnakes.version }} venv"
+      ansible.builtin.command: >
+        /usr/bin/python{{ ppa_deadsnakes.version }} -m venv {{ netbox.base_path }}/venv
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+    
+    # https://github.com/pallets/markupsafe/issues/282
+    - name: "Pin markupsafe<2.1.0 in requirements.txt"
+      ansible.builtin.lineinfile:
+        path: "{{ netbox.base_path }}/requirements.txt"
+        line: "markupsafe<2.1.0"
+
+    # NOTE: we install and run Netbox from its own Python3 venv
+    # this task was throwing an error: Failed to build psycopg2-binary
+    # it seems pip is hell-bent on installing that package from source despite
+    # the binary package already installed
+    # and the build requires dependencies that were unfulfilled
+    ### Support to Python 3.8 was added in psycopg 2.8.4
+    ### so we must force venv to use Python 3.7 
+    - name: "Install pip requirements for Netbox v{{ netbox.version }} using venv"
+      ansible.builtin.pip:
+        requirements: "{{ netbox.base_path }}/requirements.txt"
+        state: present
+        virtualenv: "{{ netbox.base_path }}/venv"
+        virtualenv_python: "python{{ ppa_deadsnakes.version }}"
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  # END OF BLOCK

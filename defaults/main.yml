@@ -1,0 +1,12 @@
+---
+
+netbox:
+  version: 2.5.12
+  tarball_path: "{{ ansible_env.HOME }}/.cache"
+  base_path: /opt/netbox
+  media_path: /opt/netbox/netbox/media
+  config:
+    default_allowed_hosts:
+      - "localhost"
+      - "::1"
+      - "127.0.0.1"

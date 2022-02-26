@@ -1,0 +1,9 @@
+---
+
+- ansible.builtin.import_tasks: user.yml
+- ansible.builtin.import_tasks: database.yml
+- ansible.builtin.import_tasks: install.yml
+- ansible.builtin.import_tasks: configure.yml
+- ansible.builtin.import_tasks: upgrade.yml
+- ansible.builtin.import_tasks: superuser.yml
+  tags: netbox-superuser

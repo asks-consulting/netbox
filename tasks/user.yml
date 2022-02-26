@@ -1,0 +1,36 @@
+---
+
+# https://netbox.readthedocs.io/en/stable/installation/3-netbox/#create-the-netbox-system-user
+# Create a system user account named netbox. 
+# We'll configure the WSGI and HTTP services to run under this account. 
+# We'll also assign this user ownership of the media directory
+
+# If we succeed in outsourcing Apache/WSGI to luxor, this means that this user
+# must also be created on there (similar to Deluge).
+
+# I don't expect netbox media to take much space, so see no need to put it on BAY.
+# Simply including media in the backup job should be enough.
+
+# create netbox user on luxor (explicitly don't create any home directory)
+# in order to get UID/GID:
+# # sudo groupadd --system netbox
+# # sudo adduser --system --no-create-home --shell /usr/sbin/nologin --ingroup netbox netbox
+# # id netbox
+# uid=116(netbox) gid=993(netbox) groups=993(netbox)
+
+- name: Create Netbox group (to ensure same gid as on luxor)
+  ansible.builtin.group:
+    name: "{{ wallatinyarchive.user.netbox.name }}"
+    gid: "{{ wallatinyarchive.user.netbox.gid }}"
+    state: present
+
+- name: Create Netbox user (to ensure same uid as on luxor)
+  ansible.builtin.user:
+    name: "{{ wallatinyarchive.user.netbox.name }}"
+    group: "{{ wallatinyarchive.user.netbox.name }}"
+    shell: "{{ wallatinyarchive.user.netbox.shell }}"
+    uid: "{{ wallatinyarchive.user.netbox.uid }}"
+    home: "{{ wallatinyarchive.user.netbox.home }}"
+    create_home: no
+    comment: "Netbox user"
+    system: yes
