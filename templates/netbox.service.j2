@@ -9,8 +9,8 @@ Wants=network-online.target
 [Service]
 Type=simple
 
-User={{ wallatinyarchive.user.netbox.name }}
-Group={{ wallatinyarchive.user.netbox.name }}
+User={{ netbox.user.name }}
+Group={{ netbox.user.name }}
 PIDFile=/var/tmp/netbox.pid
 WorkingDirectory={{ netbox.base_path }}
 

@@ -9,14 +9,14 @@
     virtualenv: "{{ netbox.base_path }}/venv"
     virtualenv_python: "python{{ python_version }}"
   become: true
-  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  become_user: "{{ netbox.user.name }}"
 
 - name: "Put gunicorn.py on target"
   ansible.builtin.template:
     src: gunicorn.py.j2
     dest: "{{ netbox.base_path }}/gunicorn.py"
-    owner: "{{ wallatinyarchive.user.netbox.name }}"
-    group: "{{ wallatinyarchive.user.netbox.name }}"
+    owner: "{{ netbox.user.name }}"
+    group: "{{ netbox.user.name }}"
     mode: ug=rwx,o=rx
 
 - name: Create Netbox systemd services

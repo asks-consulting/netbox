@@ -28,8 +28,8 @@
   ansible.builtin.file:
     path: "{{ netbox.base_path }}"
     state: directory
-    owner: "{{ wallatinyarchive.user.netbox.name }}"
-    group: "{{ wallatinyarchive.user.netbox.name }}"
+    owner: "{{ netbox.user.name }}"
+    group: "{{ netbox.user.name }}"
   register: netbox_dir
 
 
@@ -45,8 +45,8 @@
         src: "{{ netbox_installer.dest }}"
         dest: "{{ netbox.base_path }}"
         remote_src: yes
-        owner: "{{ wallatinyarchive.user.netbox.name }}"
-        group: "{{ wallatinyarchive.user.netbox.name }}"
+        owner: "{{ netbox.user.name }}"
+        group: "{{ netbox.user.name }}"
         extra_opts: "--strip-components=1"
 
     # make sure the python venv we create uses right python3.x version
@@ -55,7 +55,7 @@
       ansible.builtin.command: >
         /usr/bin/python{{ python_version }} -m venv {{ netbox.base_path }}/venv
       become: true
-      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      become_user: "{{ netbox.user.name }}"
     
     # https://github.com/pallets/markupsafe/issues/282
     - name: "Pin markupsafe<2.1.0 in requirements.txt"
@@ -68,7 +68,7 @@
     - name: Clean up stale Python bytecode
       ansible.builtin.command: find {{ netbox.base_path }} -name "*.pyc" -delete
       become: true
-      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      become_user: "{{ netbox.user.name }}"
       when: netbox_version is version('2.6', '<')
 
     - name: Upgrade pip itself
@@ -78,7 +78,7 @@
         virtualenv: "{{ netbox.base_path }}/venv"
         virtualenv_python: "python{{ python_version }}"
       become: true
-      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      become_user: "{{ netbox.user.name }}"
 
     - name: Install Python system packages (pip install wheel)
       ansible.builtin.pip:
@@ -87,7 +87,7 @@
         virtualenv: "{{ netbox.base_path }}/venv"
         virtualenv_python: "python{{ python_version }}"
       become: true
-      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      become_user: "{{ netbox.user.name }}"
 
     # recent netbox versions don't include old_requirements.txt
     - name: Check if old_requirements.txt exist
@@ -102,7 +102,7 @@
         virtualenv: "{{ netbox.base_path }}/venv"
         virtualenv_python: "python{{ python_version }}"
       become: true
-      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      become_user: "{{ netbox.user.name }}"
       when: netbox_old_requirements.stat.exists | bool
 
     - name: Check if local_requirements.txt exist
@@ -117,7 +117,7 @@
         virtualenv: "{{ netbox.base_path }}/venv"
         virtualenv_python: "python{{ python_version }}"
       become: true
-      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      become_user: "{{ netbox.user.name }}"
       when: netbox_local_requirements.stat.exists | bool
 
     # We install and run Netbox from its own Python3 venv
@@ -128,5 +128,5 @@
         virtualenv: "{{ netbox.base_path }}/venv"
         virtualenv_python: "python{{ python_version }}"
       become: true
-      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      become_user: "{{ netbox.user.name }}"
   # END OF BLOCK

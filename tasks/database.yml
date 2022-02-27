@@ -1,7 +1,7 @@
 ---
 
 # critical for the postgresql_user and postgresql_db plugins to work as expected
-# also required for plugins running as {{ wallatinyarchive.user.netbox.name }}
+# also required for plugins running as {{ netbox.user.name }}
 # my common role already installs it, added here to make this role more self-contained
 - name: "Make sure access control list (ACL) utilities are installed"
   ansible.builtin.apt:

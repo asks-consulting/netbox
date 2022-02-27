@@ -10,6 +10,9 @@ netbox:
   restore:
     database: true
     path: "secret/netbox-v2.11.12.sql"
+  user:
+    name: netbox
+    shell: /usr/sbin/nologin
   config:
     default_allowed_hosts:
       - "localhost"
@@ -24,18 +27,9 @@ netbox:
       port: "{{ redis_port }}"
       # redis_socket.path is defined in redis role or group_vars
       host: "{{ redis_socket.path }}"
+      # https://github.com/netbox-community/netbox/issues/4377
+      # this role hacks netbox's settings.py to force use of redis socket
       socket: true
       # note! Our Redis role does not configure authentication, password should be empty
       # https://github.com/netbox-community/netbox/discussions/7258
       password: ""
-
-# it does not look like Netbox supports Redis socket (we are limited to IP port)
-# https://github.com/netbox-community/netbox/issues/4377
-# well, I want to place netbox on taipei, which already runs at least on service
-# dependent on redis socket, so this just became more important to figure out
-
-# Server Error
-# <class 'redis.exceptions.ConnectionError'>
-# Error 111 connecting to localhost:6379. Connection refused.
-
-# I think I managed to fix by hacking a line in settings.py

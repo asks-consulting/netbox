@@ -16,4 +16,4 @@
   args:
     chdir: "{{ netbox.base_path }}"
   become: true
-  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  become_user: "{{ netbox.user.name }}"

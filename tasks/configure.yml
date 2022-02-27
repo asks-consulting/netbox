@@ -13,8 +13,8 @@
       ansible.builtin.copy:
         src: "{{ netbox.restore.path }}"
         dest: "{{ netbox.base_path }}/netbox.sql"
-        owner: "{{ wallatinyarchive.user.netbox.name }}"
-        group: "{{ wallatinyarchive.user.netbox.name }}"
+        owner: "{{ netbox.user.name }}"
+        group: "{{ netbox.user.name }}"
     
     - name: "Drop database {{ DB_NAME }}"
       community.postgresql.postgresql_db:
@@ -61,8 +61,8 @@
     regexp: "'LOCATION': f"
     line: "        'LOCATION': f'unix://@{CACHING_REDIS_HOST}?db={CACHING_REDIS_DATABASE}',"
     state: present
-    owner: "{{ wallatinyarchive.user.netbox.name }}"
-    group: "{{ wallatinyarchive.user.netbox.name }}"
+    owner: "{{ netbox.user.name }}"
+    group: "{{ netbox.user.name }}"
   when:
     - netbox.config.redis.socket | bool
     - netbox_version is version('3.1.8', '==')
@@ -72,8 +72,8 @@
   ansible.builtin.template:
     src: configuration.py.j2
     dest: "{{ netbox.base_path }}/netbox/netbox/configuration.py"
-    owner: "{{ wallatinyarchive.user.netbox.name }}"
-    group: "{{ wallatinyarchive.user.netbox.name }}"
+    owner: "{{ netbox.user.name }}"
+    group: "{{ netbox.user.name }}"
     mode: ug=rw
   notify: restart netbox services
 
@@ -90,7 +90,7 @@
   args:
     chdir: "{{ netbox.base_path }}"
   become: true
-  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  become_user: "{{ netbox.user.name }}"
 
 
 # I was getting "Server Error <class 'redis.exceptions.AuthenticationError'>"
@@ -109,8 +109,8 @@
       ansible.builtin.template:
         src: create_superuser.py.j2
         dest: "{{ netbox.base_path }}/netbox/create_superuser.py"
-        owner: "{{ wallatinyarchive.user.netbox.name }}"
-        group: "{{ wallatinyarchive.user.netbox.name }}"
+        owner: "{{ netbox.user.name }}"
+        group: "{{ netbox.user.name }}"
         mode: u=rwx
 
     # I'm pretty sure this requires Netbox database schema to exist beforehand
@@ -122,7 +122,7 @@
       args:
         chdir: "{{ netbox.base_path }}"
       become: true
-      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      become_user: "{{ netbox.user.name }}"
 
     # since this file contains admin password, wipe it
     - name: "Remove superuser creation script"
@@ -139,7 +139,7 @@
   args:
     chdir: "{{ netbox.base_path }}"
   become: true
-  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  become_user: "{{ netbox.user.name }}"
   when: netbox_version is version('3.0', '>')
 
 # collect static files at /opt/netbox/netbox/static (this will overwrite existing files)
@@ -151,7 +151,7 @@
   args:
     chdir: "{{ netbox.base_path }}"
   become: true
-  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  become_user: "{{ netbox.user.name }}"
 
 - name: Delete stale content types
   ansible.builtin.command: >
@@ -160,7 +160,7 @@
   args:
     chdir: "{{ netbox.base_path }}"
   become: true
-  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  become_user: "{{ netbox.user.name }}"
   when: netbox_version is version('3.0', '>')
 
 - name: Delete any expired user sessions
@@ -170,7 +170,7 @@
   args:
     chdir: "{{ netbox.base_path }}"
   become: true
-  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  become_user: "{{ netbox.user.name }}"
   when: netbox_version is version('3.0', '>')
 
 # let's implement the housekeeping cronjob as a systemd timer
