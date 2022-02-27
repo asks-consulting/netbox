@@ -1,15 +1,74 @@
 ---
 
-# https://netbox.readthedocs.io/en/stable/installation/3-netbox/#configuration
 
-- name: Configure Netbox
+- name: Restore database from dump
+  when: netbox.restore.database | bool
+  block:
+
+    # restore dumped Netbox database sql file
+    # https://stribny.name/blog/ansible-postgresql-backups/
+    # https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_db_module.html
+
+    - name: "Copy database dump to the target"
+      ansible.builtin.copy:
+        src: "{{ netbox.restore.path }}"
+        dest: "{{ netbox.base_path }}/netbox.sql"
+        owner: "{{ wallatinyarchive.user.netbox.name }}"
+        group: "{{ wallatinyarchive.user.netbox.name }}"
+    
+    - name: "Drop database {{ DB_NAME }}"
+      community.postgresql.postgresql_db:
+        name: "{{ DB_NAME }}"
+        encoding: UTF-8
+        state: absent
+        owner: "{{ DB_USER }}"
+        port: "{{ DB_PORT }}"
+      become: true
+      become_user: "{{ db_admin_username }}"
+    
+    - name: "Create empty database {{ DB_NAME }}"
+      community.postgresql.postgresql_db:
+        name: "{{ DB_NAME }}"
+        encoding: UTF-8
+        state: present
+        owner: "{{ DB_USER }}"
+        port: "{{ DB_PORT }}"
+      become: true
+      become_user: "{{ db_admin_username }}"
+    
+    - name: "Restore database"
+      community.postgresql.postgresql_db:
+        name: "{{ DB_NAME }}"
+        owner: "{{ DB_USER }}"
+        port: "{{ DB_PORT }}"
+        state: restore
+        target: "{{ netbox.base_path }}/netbox.sql"
+      become: true
+      become_user: "{{ db_admin_username }}"
+    
+    - name: Delete the dump from the target
+      ansible.builtin.file:
+        path: "{{ netbox.base_path }}/netbox.sql"
+        state: absent
+  # END OF BLOCK
+
+
+# https://netbox.readthedocs.io/en/stable/installation/3-netbox/#configuration
+- name: Apply Netbox configuration.py
   ansible.builtin.template:
     src: configuration.py.j2
     dest: "{{ netbox.base_path }}/netbox/netbox/configuration.py"
     owner: "{{ wallatinyarchive.user.netbox.name }}"
     group: "{{ wallatinyarchive.user.netbox.name }}"
     mode: ug=rw
+  notify: restart netbox services
 
+# You have to restore into Netbox 2.11.x first, apply migrations, 
+# then dump the database and restore into 3.0.x, and apply migrations
+# You can go 2.6.x -> 2.11.x -> 3.0.x
+# https://github.com/netbox-community/netbox/discussions/7955
+# https://github.com/netbox-community/netbox/issues/7151
+# https://github.com/netbox-community/netbox/discussions/8613
 - name: Apply all database migrations
   ansible.builtin.command: >
     venv/bin/python{{ python_version }}
@@ -18,6 +77,46 @@
     chdir: "{{ netbox.base_path }}"
   become: true
   become_user: "{{ wallatinyarchive.user.netbox.name }}"
+
+
+# I was getting "Server Error <class 'redis.exceptions.AuthenticationError'>"
+# when opening Netbox in the browser: "Client sent AUTH, but no password is set"
+# Making sure Redis was passwordless did not resolve it. What seemed to fix it
+# was restarting redis a few times, or possible just waiting a minute after playbook run.
+# Could have been caused by communication with Redis temporarily down after service restart?
+- name: Create superuser (if not restoring from dump)
+  when: not (netbox.restore.database | bool)
+  block:
+
+    # create superuser non-interactively
+    # https://github.com/netbox-community/netbox/discussions/7283
+    # https://github.com/netbox-community/netbox-docker/blob/e021390568b21f09015d54ee6e2504b20991affa/docker/docker-entrypoint.sh#L60-L66
+    - name: "Put superuser creation script on {{ ansible_hostname }}"
+      ansible.builtin.template:
+        src: create_superuser.py.j2
+        dest: "{{ netbox.base_path }}/netbox/create_superuser.py"
+        owner: "{{ wallatinyarchive.user.netbox.name }}"
+        group: "{{ wallatinyarchive.user.netbox.name }}"
+        mode: u=rwx
+
+    # I'm pretty sure this requires Netbox database schema to exist beforehand
+    # https://stackoverflow.com/questions/49463341/django-apps-arent-loaded-yet
+    - name: Create superuser
+      ansible.builtin.shell: >
+        venv/bin/python{{ python_version }}
+        netbox/manage.py shell < netbox/create_superuser.py
+      args:
+        chdir: "{{ netbox.base_path }}"
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+
+    # since this file contains admin password, wipe it
+    - name: "Remove superuser creation script"
+      ansible.builtin.file:
+        path: "{{ netbox.base_path }}/netbox/create_superuser.py"
+        state: absent
+  # END OF BLOCK
+
 
 - name: Check for missing cable paths
   ansible.builtin.command: >
@@ -28,34 +127,6 @@
   become: true
   become_user: "{{ wallatinyarchive.user.netbox.name }}"
   when: netbox_version is version('3.0', '>')
-
-# create superuser non-interactively
-# https://github.com/netbox-community/netbox/discussions/7283
-# https://github.com/netbox-community/netbox-docker/blob/e021390568b21f09015d54ee6e2504b20991affa/docker/docker-entrypoint.sh#L60-L66
-- name: "Put superuser creation script on {{ ansible_hostname }}"
-  ansible.builtin.template:
-    src: create_superuser.py.j2
-    dest: "{{ netbox.base_path }}/netbox/create_superuser.py"
-    owner: "{{ wallatinyarchive.user.netbox.name }}"
-    group: "{{ wallatinyarchive.user.netbox.name }}"
-    mode: u=rwx
-
-# I'm pretty sure this requires Netbox database schema to exist beforehand
-# https://stackoverflow.com/questions/49463341/django-apps-arent-loaded-yet
-- name: Create superuser
-  ansible.builtin.shell: >
-    venv/bin/python{{ python_version }}
-    netbox/manage.py shell < netbox/create_superuser.py
-  args:
-    chdir: "{{ netbox.base_path }}"
-  become: true
-  become_user: "{{ wallatinyarchive.user.netbox.name }}"
-
-# since this file contains admin password, wipe it
-- name: "Remove superuser creation script"
-  ansible.builtin.file:
-    path: "{{ netbox.base_path }}/netbox/create_superuser.py"
-    state: absent
 
 # collect static files at /opt/netbox/netbox/static (this will overwrite existing files)
 # requires configuration.py to exist!
@@ -87,3 +158,23 @@
   become: true
   become_user: "{{ wallatinyarchive.user.netbox.name }}"
   when: netbox_version is version('3.0', '>')
+
+# let's implement the housekeeping cronjob as a systemd timer
+- name: Create systemd timer for Netbox housekeeping
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: u=rw,go=r
+  loop:
+    - netbox-housekeeping.service
+    - netbox-housekeeping.timer
+
+- name: Enable and start the Netbox housekeeping timer
+  ansible.builtin.systemd:
+    name: netbox-housekeeping.timer
+    enabled: yes
+    state: started    
+    scope: system
+    daemon_reload: yes

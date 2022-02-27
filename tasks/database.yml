@@ -31,7 +31,7 @@
   become_user: "{{ db_admin_username }}"
   register: netbox_psql_info
 
-- name: "Create empty  database {{ DB_NAME }} if not already existing"
+- name: "Create empty database {{ DB_NAME }} (if not already exist)"
   community.postgresql.postgresql_db:
     name: "{{ DB_NAME }}"
     encoding: UTF-8

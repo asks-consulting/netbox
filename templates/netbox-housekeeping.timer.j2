@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Netbox housekeeping once a day
+
+[Timer]
+# start 5 min after boot
+OnBootSec=5min
+OnCalendar=daily
+Unit=netbox-housekeeping.service
+
+[Install]
+WantedBy=timers.target

@@ -1,17 +1,12 @@
 ---
 
 - ansible.builtin.import_tasks: version-check.yml
-  tags: netbox-version-check
 
 - ansible.builtin.import_tasks: user.yml
 - ansible.builtin.import_tasks: database.yml
 - ansible.builtin.import_tasks: install.yml
 
-# writes to the netbox database (skipped if restoring database)
+# contains all tasks that write to the database
 - ansible.builtin.import_tasks: configure.yml
-  when: not (netbox.import_database | bool)
-
-- ansible.builtin.import_tasks: restore.yml
-  when: netbox.import_database | bool
 
 - ansible.builtin.import_tasks: gunicorn.yml

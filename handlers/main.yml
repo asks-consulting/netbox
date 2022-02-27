@@ -1,9 +1,19 @@
 ---
 
 - name: restart netbox services
+  listen: restart netbox services
   ansible.builtin.systemd:
     name: "{{ item }}"
     state: restarted
   loop:
     - netbox.service
     - netbox-rq.service
+
+- name: run housekeeping
+  listen: restart netbox services
+  ansible.builtin.command: >
+    venv/bin/python netbox/manage.py housekeeping
+  args:
+    chdir: "{{ netbox.base_path }}"
+  become: true
+  become_user: "{{ wallatinyarchive.user.netbox.name }}"

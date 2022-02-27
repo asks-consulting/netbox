@@ -3,11 +3,13 @@
 netbox:
   # set a numeric version string, e.g., 3.1.8, or
   # set "latest" for the latest available release
-  version: 2.11.12
+  version: 3.1.8
   tarball_path: "{{ ansible_env.HOME }}/.cache"
   base_path: /opt/netbox
   media_path: /opt/netbox/netbox/media
-  import_database: true
+  restore:
+    database: true
+    path: "secret/netbox-v2.11.12.sql"
   config:
     default_allowed_hosts:
       - "localhost"

@@ -29,4 +29,6 @@ LOGIN_REQUIRED: true
 
 # it does not look like Netbox supports Redis socket (we are limited to IP port)
 # https://github.com/netbox-community/netbox/issues/4377
-REDIS_PASSWORD: "{{ lookup('community.general.passwordstore', 'hosts/armant/docker/netbox/redis') }}"
+# Note! Our Redis role does not configure authentication, password should be empty
+# https://github.com/netbox-community/netbox/discussions/7258
+REDIS_PASSWORD: ""
