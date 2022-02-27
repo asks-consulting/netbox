@@ -1,7 +1,9 @@
 ---
 
 netbox:
-  version: 2.5.12
+  # set a numeric version string, e.g., 3.1.8, or
+  # set "latest" for the latest available release
+  version: 2.11.12
   tarball_path: "{{ ansible_env.HOME }}/.cache"
   base_path: /opt/netbox
   media_path: /opt/netbox/netbox/media

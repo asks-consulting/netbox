@@ -11,8 +11,8 @@
 
     - name: "Copy database dump to the target"
       ansible.builtin.copy:
-        src: "secret/netbox.sql"
-        dest: "{{ netbox.base_path }}/"
+        src: "secret/netbox-v2.5.sql"
+        dest: "{{ netbox.base_path }}/netbox.sql"
         owner: "{{ wallatinyarchive.user.netbox.name }}"
         group: "{{ wallatinyarchive.user.netbox.name }}"
 
@@ -39,23 +39,61 @@
         group: "{{ wallatinyarchive.user.netbox.name }}"
         mode: ug=rw
     
+    # failed with
+    # django.db.migrations.exceptions.NodeNotFoundError
+    # https://github.com/netbox-community/netbox/issues/7151
+    # https://github.com/netbox-community/netbox/discussions/8613
+    # You have to restore into Netbox 2.11.x first, apply migrations, 
+    # then dump the database and restore into 3.0.x, and apply migrations
+    # You can go 2.6.x -> 2.11.x -> 3.0.x
+    # https://github.com/netbox-community/netbox/discussions/7955
     - name: Apply all database migrations
       ansible.builtin.command: >
-        venv/bin/python{{ ppa_deadsnakes.version }}
+        venv/bin/python{{ python_version }}
         netbox/manage.py migrate
       args:
         chdir: "{{ netbox.base_path }}"
       become: true
       become_user: "{{ wallatinyarchive.user.netbox.name }}"
     
+    - name: Check for missing cable paths
+      ansible.builtin.command: >
+        venv/bin/python{{ python_version }}
+        netbox/manage.py trace_paths --no-input
+      args:
+        chdir: "{{ netbox.base_path }}"
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      when: netbox_version is version('3.0', '>')
+
     # collect static files at /opt/netbox/netbox/static (this will overwrite existing files)
     # requires configuration.py to exist!
     - name: Collect static files
       ansible.builtin.command: >
-        venv/bin/python{{ ppa_deadsnakes.version }}
+        venv/bin/python{{ python_version }}
         netbox/manage.py collectstatic --no-input
       args:
         chdir: "{{ netbox.base_path }}"
       become: true
       become_user: "{{ wallatinyarchive.user.netbox.name }}"
+    
+    - name: Delete stale content types
+      ansible.builtin.command: >
+        venv/bin/python{{ python_version }}
+        netbox/manage.py remove_stale_contenttypes --no-input
+      args:
+        chdir: "{{ netbox.base_path }}"
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      when: netbox_version is version('3.0', '>')
+
+    - name: Delete any expired user sessions
+      ansible.builtin.command: >
+        venv/bin/python{{ python_version }}
+        netbox/manage.py clearsessions
+      args:
+        chdir: "{{ netbox.base_path }}"
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      when: netbox_version is version('3.0', '>')
   # END OF BLOCK

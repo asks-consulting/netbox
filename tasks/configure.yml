@@ -12,12 +12,22 @@
 
 - name: Apply all database migrations
   ansible.builtin.command: >
-    venv/bin/python{{ ppa_deadsnakes.version }}
+    venv/bin/python{{ python_version }}
     netbox/manage.py migrate
   args:
     chdir: "{{ netbox.base_path }}"
   become: true
   become_user: "{{ wallatinyarchive.user.netbox.name }}"
+
+- name: Check for missing cable paths
+  ansible.builtin.command: >
+    venv/bin/python{{ python_version }}
+    netbox/manage.py trace_paths --no-input
+  args:
+    chdir: "{{ netbox.base_path }}"
+  become: true
+  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  when: netbox_version is version('3.0', '>')
 
 # create superuser non-interactively
 # https://github.com/netbox-community/netbox/discussions/7283
@@ -34,7 +44,7 @@
 # https://stackoverflow.com/questions/49463341/django-apps-arent-loaded-yet
 - name: Create superuser
   ansible.builtin.shell: >
-    venv/bin/python{{ ppa_deadsnakes.version }}
+    venv/bin/python{{ python_version }}
     netbox/manage.py shell < netbox/create_superuser.py
   args:
     chdir: "{{ netbox.base_path }}"
@@ -51,9 +61,29 @@
 # requires configuration.py to exist!
 - name: Collect static files
   ansible.builtin.command: >
-    venv/bin/python{{ ppa_deadsnakes.version }}
+    venv/bin/python{{ python_version }}
     netbox/manage.py collectstatic --no-input
   args:
     chdir: "{{ netbox.base_path }}"
   become: true
   become_user: "{{ wallatinyarchive.user.netbox.name }}"
+
+- name: Delete stale content types
+  ansible.builtin.command: >
+    venv/bin/python{{ python_version }}
+    netbox/manage.py remove_stale_contenttypes --no-input
+  args:
+    chdir: "{{ netbox.base_path }}"
+  become: true
+  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  when: netbox_version is version('3.0', '>')
+
+- name: Delete any expired user sessions
+  ansible.builtin.command: >
+    venv/bin/python{{ python_version }}
+    netbox/manage.py clearsessions
+  args:
+    chdir: "{{ netbox.base_path }}"
+  become: true
+  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  when: netbox_version is version('3.0', '>')

@@ -157,16 +157,18 @@ filesystem. Thanks to @candlerb for that neat solution!
 > it proxies to gunicorn on port `8001`.
 > https://github.com/netbox-community/netbox/discussions/8598
 
-+ Import the database.
++ Import the database. OK!
 
-Testing this now.
++ Test Netbox. Was migration successful? Looks good.
 
-+ Test Netbox. Was migration successful?
++ Now try again with PostgreSQL v12, Python 3.8 and the latest Netbox version 
+  (restore from dump as before).
+  This had to be done in steps:
 
+  + imported database dump from v2.5.12 into Netbox v2.11.12 - OK.
+  + created new database dump: `sudo su - postgres && pg_dump netbox > netbox-v2.11.12.sqlpg_dump netbox > netbox-v2.11.12.sql`. Saved.
+  
 
-+ Then upgrade PostgreSQL to v12.
-+ Then upgrade Netbox itself to the latest version. (Run its `upgrade.sh` script).
-+ Verify it all still works, then make a new database dump.
 
 Now we should be able to safely migrate Netbox to its final home on `taipei`,
 targeting the latest version of Netbox.

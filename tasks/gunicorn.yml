@@ -7,7 +7,7 @@
     name: gunicorn
     state: present
     virtualenv: "{{ netbox.base_path }}/venv"
-    virtualenv_python: "python{{ ppa_deadsnakes.version }}"
+    virtualenv_python: "python{{ python_version }}"
   become: true
   become_user: "{{ wallatinyarchive.user.netbox.name }}"
 

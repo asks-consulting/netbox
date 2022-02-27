@@ -15,9 +15,9 @@
       - libjpeg-dev
     state: present
 
-- name: "Download the Netbox tarball v{{ netbox.version }}"
+- name: "Download the Netbox tarball v{{ netbox_version }}"
   ansible.builtin.get_url:
-    url: "https://github.com/netbox-community/netbox/archive/refs/tags/v{{ netbox.version }}.tar.gz"
+    url: "https://github.com/netbox-community/netbox/archive/refs/tags/v{{ netbox_version }}.tar.gz"
     dest: "{{ netbox.tarball_path }}"
     owner: "{{ ansible_env.USER }}"
     group: "{{ ansible_env.USER }}"
@@ -51,9 +51,9 @@
 
     # make sure the python venv we create uses right python3.x version
     # https://docs.python.org/3/library/venv.html
-    - name: "Create Python{{ ppa_deadsnakes.version }} venv"
+    - name: "Create Python{{ python_version }} venv"
       ansible.builtin.command: >
-        /usr/bin/python{{ ppa_deadsnakes.version }} -m venv {{ netbox.base_path }}/venv
+        /usr/bin/python{{ python_version }} -m venv {{ netbox.base_path }}/venv
       become: true
       become_user: "{{ wallatinyarchive.user.netbox.name }}"
     
@@ -62,32 +62,71 @@
       ansible.builtin.lineinfile:
         path: "{{ netbox.base_path }}/requirements.txt"
         line: "markupsafe<2.1.0"
+      when: python_version is version('3.8', '<')
 
     # no longer needed under Python 3 for Netbox 2.6 and later (according to docs)
     - name: Clean up stale Python bytecode
       ansible.builtin.command: find {{ netbox.base_path }} -name "*.pyc" -delete
       become: true
       become_user: "{{ wallatinyarchive.user.netbox.name }}"
-      when: netbox.version is version('2.6', '<')
+      when: netbox_version is version('2.6', '<')
 
+    - name: Upgrade pip itself
+      ansible.builtin.pip:
+        name: pip
+        state: latest
+        virtualenv: "{{ netbox.base_path }}/venv"
+        virtualenv_python: "python{{ python_version }}"
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+
+    - name: Install Python system packages (pip install wheel)
+      ansible.builtin.pip:
+        name: wheel
+        state: latest
+        virtualenv: "{{ netbox.base_path }}/venv"
+        virtualenv_python: "python{{ python_version }}"
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+
+    # recent netbox versions don't include old_requirements.txt
+    - name: Check if old_requirements.txt exist
+      ansible.builtin.stat:
+        path: "{{ netbox.base_path }}/old_requirements.txt"
+      register: netbox_old_requirements
+      
     - name: "Uninstall old pip requirements"
       ansible.builtin.pip:
         requirements: "{{ netbox.base_path }}/old_requirements.txt"
         state: absent
         virtualenv: "{{ netbox.base_path }}/venv"
-        virtualenv_python: "python{{ ppa_deadsnakes.version }}"
+        virtualenv_python: "python{{ python_version }}"
       become: true
       become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      when: netbox_old_requirements.stat.exists | bool
+
+    - name: Check if local_requirements.txt exist
+      ansible.builtin.stat:
+        path: "{{ netbox.base_path }}/local_requirements.txt"
+      register: netbox_local_requirements
+    
+    - name: "Install pip local_requirements.txt"
+      ansible.builtin.pip:
+        requirements: "{{ netbox.base_path }}/local_requirements.txt"
+        state: present
+        virtualenv: "{{ netbox.base_path }}/venv"
+        virtualenv_python: "python{{ python_version }}"
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+      when: netbox_local_requirements.stat.exists | bool
 
     # We install and run Netbox from its own Python3 venv
-    # NOTE! In order to support required psycopg-binary version 2.7.6.1 we must
-    # Support to Python 3.8 was added in psycopg 2.8.4 force venv to use Python <=3.7
-    - name: "Install pip requirements for Netbox v{{ netbox.version }} using venv"
+    - name: "Install pip requirements for Netbox v{{ netbox_version }} using venv"
       ansible.builtin.pip:
         requirements: "{{ netbox.base_path }}/requirements.txt"
         state: present
         virtualenv: "{{ netbox.base_path }}/venv"
-        virtualenv_python: "python{{ ppa_deadsnakes.version }}"
+        virtualenv_python: "python{{ python_version }}"
       become: true
       become_user: "{{ wallatinyarchive.user.netbox.name }}"
   # END OF BLOCK

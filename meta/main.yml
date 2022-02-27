@@ -2,9 +2,14 @@
 
 dependencies:
   - role: postgres # no secondary dependencies
-    become: true 
+    become: true
     tags: postgres
   # redis role has been configured to not depend on php for netbox group
   - role: redis # no secondary dependencies
-    become: true 
+    become: true
     tags: redis
+  # dependency only for the sake of {{ python_version }} variable
+  # otherwise that variable is not visible in netbox role
+  - role: python3 # no secondary dependencies
+    become: true 
+    tags: python3

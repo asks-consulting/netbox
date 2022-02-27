@@ -1,5 +1,8 @@
 ---
 
+- ansible.builtin.import_tasks: version-check.yml
+  tags: netbox-version-check
+
 - ansible.builtin.import_tasks: user.yml
 - ansible.builtin.import_tasks: database.yml
 - ansible.builtin.import_tasks: install.yml
