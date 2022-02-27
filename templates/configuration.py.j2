@@ -130,20 +130,22 @@ PREFER_IPV4 = False
 # https://netbox.readthedocs.io/en/stable/installation/3-netbox/#redis
 REDIS = {
    'tasks': {
-      'HOST': 'localhost',
-      'PORT': {{ redis_port }},
-      'PASSWORD': '{{ REDIS_PASSWORD }}',
+      'HOST': '{{ netbox.config.redis.host }}',
+      'PORT': {{ netbox.config.redis.port }},
+      'PASSWORD': '{{ netbox.config.redis.password }}',
       'DATABASE': 0,
       'DEFAULT_TIMEOUT': 300,
       'SSL': False,
+#    #'USE_SOCKET': {{ netbox.config.redis.socket }},
    },
    'caching': {
-      'HOST': 'localhost',
-      'PORT': {{ redis_port }},
-      'PASSWORD': '{{ REDIS_PASSWORD }}',
+      'HOST': '{{ netbox.config.redis.host }}',
+      'PORT': {{ netbox.config.redis.port }},
+      'PASSWORD': '{{ netbox.config.redis.password }}',
       'DATABASE': 1,
       'DEFAULT_TIMEOUT': 300,
       'SSL': False,
+#    #'USE_SOCKET': {{ netbox.config.redis.socket }},
    },
 }
 

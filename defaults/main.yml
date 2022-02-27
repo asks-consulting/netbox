@@ -19,3 +19,23 @@ netbox:
       # not 127.0.0.1 because we plan to proxy from luxor
       host: 0.0.0.0
       port: 8001
+    redis:
+      # redis_port is defined in redis role
+      port: "{{ redis_port }}"
+      # redis_socket.path is defined in redis role or group_vars
+      host: "{{ redis_socket.path }}"
+      socket: true
+      # note! Our Redis role does not configure authentication, password should be empty
+      # https://github.com/netbox-community/netbox/discussions/7258
+      password: ""
+
+# it does not look like Netbox supports Redis socket (we are limited to IP port)
+# https://github.com/netbox-community/netbox/issues/4377
+# well, I want to place netbox on taipei, which already runs at least on service
+# dependent on redis socket, so this just became more important to figure out
+
+# Server Error
+# <class 'redis.exceptions.ConnectionError'>
+# Error 111 connecting to localhost:6379. Connection refused.
+
+# I think I managed to fix by hacking a line in settings.py

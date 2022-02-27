@@ -26,9 +26,3 @@ EMAIL_FROM: "{{ lookup('community.general.passwordstore', 'hosts/armant/docker/n
 
 # Setting this to True will permit only authenticated users to access any part of NetBox
 LOGIN_REQUIRED: true
-
-# it does not look like Netbox supports Redis socket (we are limited to IP port)
-# https://github.com/netbox-community/netbox/issues/4377
-# Note! Our Redis role does not configure authentication, password should be empty
-# https://github.com/netbox-community/netbox/discussions/7258
-REDIS_PASSWORD: ""

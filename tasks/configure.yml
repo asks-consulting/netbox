@@ -53,6 +53,20 @@
   # END OF BLOCK
 
 
+# original line:
+# 'LOCATION': f'{CACHING_REDIS_PROTO}://{CACHING_REDIS_HOST}:{CACHING_REDIS_PORT}/{CACHING_REDIS_DATABASE}',
+- name: Hack settings.py to force NetBox to use Redis socket instead of port
+  ansible.builtin.lineinfile:
+    path: "{{ netbox.base_path }}/netbox/netbox/settings.py"
+    regexp: "'LOCATION': f"
+    line: "        'LOCATION': f'unix://@{CACHING_REDIS_HOST}?db={CACHING_REDIS_DATABASE}',"
+    state: present
+    owner: "{{ wallatinyarchive.user.netbox.name }}"
+    group: "{{ wallatinyarchive.user.netbox.name }}"
+  when:
+    - netbox.config.redis.socket | bool
+    - netbox_version is version('3.1.8', '==')
+
 # https://netbox.readthedocs.io/en/stable/installation/3-netbox/#configuration
 - name: Apply Netbox configuration.py
   ansible.builtin.template:

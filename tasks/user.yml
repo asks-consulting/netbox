@@ -34,3 +34,8 @@
     create_home: no
     comment: "Netbox user"
     system: yes
+
+# Add the netbox user to the redis group
+- name: Allow the netbox user to connect to the redis socket
+  ansible.builtin.command: usermod -a -G redis {{ wallatinyarchive.user.netbox.name }}
+  when: netbox.config.redis.socket | bool
