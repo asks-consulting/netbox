@@ -1,0 +1,24 @@
+# https://github.com/netbox-community/netbox/blob/develop/contrib/netbox.service
+
+[Unit]
+Description=NetBox WSGI Service
+Documentation=https://netbox.readthedocs.io/en/stable/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+User={{ wallatinyarchive.user.netbox.name }}
+Group={{ wallatinyarchive.user.netbox.name }}
+PIDFile=/var/tmp/netbox.pid
+WorkingDirectory={{ netbox.base_path }}
+
+ExecStart={{ netbox.base_path }}/venv/bin/gunicorn --pid /var/tmp/netbox.pid --pythonpath {{ netbox.base_path }}/netbox --config {{ netbox.base_path }}/gunicorn.py netbox.wsgi
+
+Restart=on-failure
+RestartSec=30
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

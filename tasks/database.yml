@@ -1,8 +1,12 @@
 ---
 
-# wallabag uses db_name: wallabag and db_user: taha
-# ttrss uses db_name: ttrss and db_user: ttrss
-
+# critical for the postgresql_user and postgresql_db plugins to work as expected
+# also required for plugins running as {{ wallatinyarchive.user.netbox.name }}
+# my common role already installs it, added here to make this role more self-contained
+- name: "Make sure access control list (ACL) utilities are installed"
+  ansible.builtin.apt:
+    name: acl
+    state: present
 
 - name: "Create pgsql database user {{ DB_USER }}"
   community.postgresql.postgresql_user:

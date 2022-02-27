@@ -3,7 +3,12 @@
 - ansible.builtin.import_tasks: user.yml
 - ansible.builtin.import_tasks: database.yml
 - ansible.builtin.import_tasks: install.yml
+
+# writes to the netbox database (skipped if restoring database)
 - ansible.builtin.import_tasks: configure.yml
-- ansible.builtin.import_tasks: upgrade.yml
-- ansible.builtin.import_tasks: superuser.yml
-  tags: netbox-superuser
+  when: not (netbox.import_database | bool)
+
+- ansible.builtin.import_tasks: restore.yml
+  when: netbox.import_database | bool
+
+- ansible.builtin.import_tasks: gunicorn.yml

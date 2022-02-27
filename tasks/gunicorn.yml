@@ -1,0 +1,42 @@
+---
+
+# https://netbox.readthedocs.io/en/stable/installation/4-gunicorn/
+
+- name: Install gunicorn in venv
+  ansible.builtin.pip:
+    name: gunicorn
+    state: present
+    virtualenv: "{{ netbox.base_path }}/venv"
+    virtualenv_python: "python{{ ppa_deadsnakes.version }}"
+  become: true
+  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+
+- name: "Put gunicorn.py on target"
+  ansible.builtin.template:
+    src: gunicorn.py.j2
+    dest: "{{ netbox.base_path }}/gunicorn.py"
+    owner: "{{ wallatinyarchive.user.netbox.name }}"
+    group: "{{ wallatinyarchive.user.netbox.name }}"
+    mode: ug=rwx,o=rx
+
+- name: Create Netbox systemd services
+  ansible.builtin.template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: u=rw,go=r
+  loop:
+    - { src: netbox.service.j2, dest: /etc/systemd/system/netbox.service }
+    - { src: netbox-rq.service.j2, dest: /etc/systemd/system/netbox-rq.service }
+  notify: restart netbox services
+
+- name: Enable and start the Netbox systemd jobs
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: yes
+    state: started
+    daemon_reload: yes
+  loop:
+    - netbox.service
+    - netbox-rq.service

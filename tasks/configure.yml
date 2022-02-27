@@ -9,3 +9,51 @@
     owner: "{{ wallatinyarchive.user.netbox.name }}"
     group: "{{ wallatinyarchive.user.netbox.name }}"
     mode: ug=rw
+
+- name: Apply all database migrations
+  ansible.builtin.command: >
+    venv/bin/python{{ ppa_deadsnakes.version }}
+    netbox/manage.py migrate
+  args:
+    chdir: "{{ netbox.base_path }}"
+  become: true
+  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+
+# create superuser non-interactively
+# https://github.com/netbox-community/netbox/discussions/7283
+# https://github.com/netbox-community/netbox-docker/blob/e021390568b21f09015d54ee6e2504b20991affa/docker/docker-entrypoint.sh#L60-L66
+- name: "Put superuser creation script on {{ ansible_hostname }}"
+  ansible.builtin.template:
+    src: create_superuser.py.j2
+    dest: "{{ netbox.base_path }}/netbox/create_superuser.py"
+    owner: "{{ wallatinyarchive.user.netbox.name }}"
+    group: "{{ wallatinyarchive.user.netbox.name }}"
+    mode: u=rwx
+
+# I'm pretty sure this requires Netbox database schema to exist beforehand
+# https://stackoverflow.com/questions/49463341/django-apps-arent-loaded-yet
+- name: Create superuser
+  ansible.builtin.shell: >
+    venv/bin/python{{ ppa_deadsnakes.version }}
+    netbox/manage.py shell < netbox/create_superuser.py
+  args:
+    chdir: "{{ netbox.base_path }}"
+  become: true
+  become_user: "{{ wallatinyarchive.user.netbox.name }}"
+
+# since this file contains admin password, wipe it
+- name: "Remove superuser creation script"
+  ansible.builtin.file:
+    path: "{{ netbox.base_path }}/netbox/create_superuser.py"
+    state: absent
+
+# collect static files at /opt/netbox/netbox/static (this will overwrite existing files)
+# requires configuration.py to exist!
+- name: Collect static files
+  ansible.builtin.command: >
+    venv/bin/python{{ ppa_deadsnakes.version }}
+    netbox/manage.py collectstatic --no-input
+  args:
+    chdir: "{{ netbox.base_path }}"
+  become: true
+  become_user: "{{ wallatinyarchive.user.netbox.name }}"

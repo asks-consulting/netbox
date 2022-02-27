@@ -103,7 +103,63 @@ https://github.com/netbox-community/netbox/archive/refs/tags/v2.5.12.tar.gz
 
 + Consider gunicorn and Apache reverse proxy setup...
 
+On recent Netbox versions it seems gunicorn is installed in Netbox's python venv.
+But this does not seem to be the case for v2.5.12. On my old instance, gunicorn 
+is found at `/usr/bin/gunicorn` (inside the Docker container).
+
+OK, installed gunicorn, configured systemd services.
+Managed to run Netbox behind reverse proxy on `luxor` without needing another 
+local proxy on the container itself  (vhost on `luxor`):
+```
+<VirtualHost *:80>
+	ServerAdmin {{ SUPERUSER_EMAIL }}
+	ServerName {{ ALLOWED_HOSTS[0] }}
+
+	Redirect permanent / https://{{ ALLOWED_HOSTS[0] }}/
+
+	ErrorLog ${APACHE_LOG_DIR}/{{ ALLOWED_HOSTS[0] }}_error.log
+	CustomLog ${APACHE_LOG_DIR}/{{ ALLOWED_HOSTS[0] }}_access.log combined
+</VirtualHost>
+
+<VirtualHost *:443>
+	ServerAdmin {{ SUPERUSER_EMAIL }}
+	ServerName {{ ALLOWED_HOSTS[0] }}
+
+   ProxyPreserveHost On
+   Alias /static /var/lib/lxd/containers/netbox/rootfs/opt/netbox/netbox/static/
+   <Directory /var/lib/lxd/containers/netbox/rootfs/opt/netbox/netbox/static/>
+      Options Indexes FollowSymLinks MultiViews
+      AllowOverride None
+      Require all granted
+   </Directory>
+
+   <Location /static>
+      ProxyPass !
+   </Location>
+
+   RequestHeader set "X-Forwarded-Proto" expr=%{REQUEST_SCHEME}
+   ProxyPass / http://<container-ip>:8001/
+   ProxyPassReverse / http://<container-ip>:8001/
+
+	SSLEngine on
+	SSLCertificateKeyFile   /etc/letsencrypt/live/{{ ALLOWED_HOSTS[0] }}/privkey.pem
+	SSLCertificateFile      /etc/letsencrypt/live/{{ ALLOWED_HOSTS[0] }}/cert.pem
+	SSLCertificateChainFile /etc/letsencrypt/live/{{ ALLOWED_HOSTS[0] }}/chain.pem
+	
+	ErrorLog ${APACHE_LOG_DIR}/{{ ALLOWED_HOSTS[0] }}_error.log
+	CustomLog ${APACHE_LOG_DIR}/{{ ALLOWED_HOSTS[0] }}_access.log combined
+</VirtualHost>
+```
+Note the neat trick of pointing the static files directly out from the the container's 
+filesystem. Thanks to @candlerb for that neat solution! 
+
+> The proxy serves static files, and anything that's not under `/static/
+> it proxies to gunicorn on port `8001`.
+> https://github.com/netbox-community/netbox/discussions/8598
+
 + Import the database.
+
+Testing this now.
 
 + Test Netbox. Was migration successful?
 

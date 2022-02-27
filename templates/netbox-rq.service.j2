@@ -1,0 +1,23 @@
+# https://github.com/netbox-community/netbox/blob/develop/contrib/netbox-rq.service
+
+[Unit]
+Description=NetBox Request Queue Worker
+Documentation=https://netbox.readthedocs.io/en/stable/
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+User={{ wallatinyarchive.user.netbox.name }}
+Group={{ wallatinyarchive.user.netbox.name }}
+WorkingDirectory={{ netbox.base_path }}
+
+ExecStart={{ netbox.base_path }}/venv/bin/python3 {{ netbox.base_path }}/netbox/manage.py rqworker high default low
+
+Restart=on-failure
+RestartSec=30
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

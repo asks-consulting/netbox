@@ -1,0 +1,61 @@
+---
+
+# restore my dumped Netbox database on the LXC container
+# https://stribny.name/blog/ansible-postgresql-backups/
+# https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_db_module.html
+
+- name: Restore database from dump file
+  # the empty database of the same name must exist
+  when: "DB_NAME in netbox_psql_info.databases"
+  block:
+
+    - name: "Copy database dump to the target"
+      ansible.builtin.copy:
+        src: "secret/netbox.sql"
+        dest: "{{ netbox.base_path }}/"
+        owner: "{{ wallatinyarchive.user.netbox.name }}"
+        group: "{{ wallatinyarchive.user.netbox.name }}"
+
+    - name: "Restore database"
+      community.postgresql.postgresql_db:
+        name: "{{ DB_NAME }}"
+        owner: "{{ DB_USER }}"
+        port: "{{ DB_PORT }}"
+        state: restore
+        target: "{{ netbox.base_path }}/netbox.sql"
+      become: true
+      become_user: "{{ db_admin_username }}"
+
+    - name: Delete the dump from the target
+      ansible.builtin.file:
+        path: "{{ netbox.base_path }}/netbox.sql"
+        state: absent
+
+    - name: Configure Netbox
+      ansible.builtin.template:
+        src: configuration.py.j2
+        dest: "{{ netbox.base_path }}/netbox/netbox/configuration.py"
+        owner: "{{ wallatinyarchive.user.netbox.name }}"
+        group: "{{ wallatinyarchive.user.netbox.name }}"
+        mode: ug=rw
+    
+    - name: Apply all database migrations
+      ansible.builtin.command: >
+        venv/bin/python{{ ppa_deadsnakes.version }}
+        netbox/manage.py migrate
+      args:
+        chdir: "{{ netbox.base_path }}"
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+    
+    # collect static files at /opt/netbox/netbox/static (this will overwrite existing files)
+    # requires configuration.py to exist!
+    - name: Collect static files
+      ansible.builtin.command: >
+        venv/bin/python{{ ppa_deadsnakes.version }}
+        netbox/manage.py collectstatic --no-input
+      args:
+        chdir: "{{ netbox.base_path }}"
+      become: true
+      become_user: "{{ wallatinyarchive.user.netbox.name }}"
+  # END OF BLOCK
