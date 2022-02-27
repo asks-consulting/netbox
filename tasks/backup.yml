@@ -1,0 +1,109 @@
+---
+
+# note: we cannot count on the LXD container having write access
+# to the backup dir on BAY
+# BUT we can safely assume that the Ansible controller has such write access
+
+- name: Timestamp this backup
+  ansible.builtin.set_fact:
+    # iso8601_basic_short should look like 20220122T223743
+    this_backup_timestamp: "{{ ansible_date_time.iso8601_basic_short }}"
+
+- name: Set backup folder name
+  ansible.builtin.set_fact:
+    this_backup_name: "netbox-{{ this_backup_timestamp }}"
+
+- name: Set temporary backup directory
+  ansible.builtin.set_fact:
+    this_backup_tmp: "{{ ansible_env.HOME }}/.cache/{{ this_backup_name }}"
+
+
+- name: Backup working directory
+  block:
+
+    # https://docs.ansible.com/ansible/latest/collections/ansible/posix/synchronize_module.html
+    # https://serverfault.com/a/717382
+    # note: this task does not register destination path, only changed, cmd, failed, msg, rc
+    # this task can fail in interesting ways:
+    - name: Copy the NetBox working directory to controller
+      ansible.posix.synchronize:
+        src: "{{ netbox.base_path }}/"
+        dest: "{{ this_backup_tmp }}/"
+        # in pull mode the remote host in context is the source
+        mode: pull
+        archive: yes
+        copy_links: yes # follow symlinks
+
+
+    - name: Tasks delegated to localhost
+      delegate_to: localhost
+      become: true
+      become_user: "{{ ansible_env.USER }}"
+      block:
+
+        - name: Compress the temporary backup
+          community.general.archive:
+            path: "{{ this_backup_tmp }}/"
+            dest: "{{ this_backup_tmp }}.tgz"
+          register: this_backup_compressed
+
+        # note that become_user is necessary, otherwise "permission denied" errors
+        - name: "Create the backup target directory {{ this_backup_name }}"
+          ansible.builtin.file:
+            path: "{{ backup_root_path }}/hosts/{{ ansible_hostname }}/{{ this_backup_name }}"
+            state: directory
+            owner: "{{ ansible_env.USER }}"
+            group: "{{ ansible_env.USER }}"
+
+        # https://www.decodingdevops.com/ansible-copy-file-locally/
+        # we use delegate_to to effectively copy from localhost to localhost
+        # become_user was necessary, otherwise task fails with permissions error
+        - name: Backup the compressed NetBox workdir archive
+          ansible.builtin.copy:
+            src: "{{ this_backup_compressed.dest }}"
+            dest: "{{ backup_root_path }}/hosts/{{ ansible_hostname }}/{{ this_backup_name }}/netbox-v{{ netbox_version }}.tgz"
+
+        - name: Clean up the temporary backup
+          ansible.builtin.file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - "{{ this_backup_tmp }}"
+            - "{{ this_backup_compressed.dest }}"
+      # END OF BLOCK
+  # END OF BLOCK
+
+
+- name: Backup database
+  block:
+
+    - name: "Write database to {{ db_admin_username }} HOMEDIR"
+      ansible.builtin.set_fact:
+        this_backup_database_dump: "/var/lib/postgresql/{{ DB_NAME }}-{{ this_backup_timestamp }}.sql.gz"
+
+    # permissions are tricky here
+    # postgres user must be used to dump the database,
+    # but postgres user can only reliably write to its own homedir
+    # this task does not produce very useful metadata (only changed, cmd, failed, msg, rc, stderr)
+    # which leaves us no way to reliable record the target destination, for example
+    - name: Dump database (compressed)
+      community.postgresql.postgresql_db:
+        name: "{{ DB_NAME }}"
+        state: dump
+        target: "{{ this_backup_database_dump }}"
+      become: true
+      become_user: "{{ db_admin_username }}"
+
+    # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/fetch_module.html
+    # unless the database is compressed, this fetch takes forever (even with compression it takes a while)
+    - name: Copy compressed database to backup directory on BAY
+      ansible.builtin.fetch:
+        src: "{{ this_backup_database_dump }}"
+        dest: "{{ backup_root_path }}/hosts/{{ ansible_hostname }}/{{ this_backup_name }}/netbox-v{{ netbox_version }}.sql.gz"
+        flat: yes
+
+    - name: "Cleanup the dump from {{ db_admin_username }} HOMEDIR"
+      ansible.builtin.file:
+        path: "{{ this_backup_database_dump }}"
+        state: absent
+  # END OF BLOCK
