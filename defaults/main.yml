@@ -3,13 +3,15 @@
 netbox:
   # set a numeric version string, e.g., 3.1.8, or
   # set "latest" for the latest available release
-  version: 3.1.8
+  version: "latest"
   tarball_path: "{{ ansible_env.HOME }}/.cache"
   base_path: /opt/netbox
   media_path: /opt/netbox/netbox/media
   restore:
-    database: true
-    path: "secret/netbox-v2.11.12.sql"
+    # to restore from database dump, set database: true
+    database: false
+    # and put the database dump file in files/
+    path: "netbox-v2.11.12.sql"
   user:
     name: netbox
     shell: /usr/sbin/nologin
@@ -23,13 +25,13 @@ netbox:
       host: 0.0.0.0
       port: 8001
     redis:
-      # redis_port is defined in redis role
+      # redis_port: 0 is defined in redis role
       port: "{{ redis_port }}"
-      # redis_socket.path is defined in redis role or group_vars
+      # redis_socket.path: /var/run/redis/redis-server.sock is defined in redis role or group_vars
       host: "{{ redis_socket.path }}"
       # https://github.com/netbox-community/netbox/issues/4377
       # this role hacks netbox's settings.py to force use of redis socket
       socket: true
-      # note! Our Redis role does not configure authentication, password should be empty
+      # note! our Redis role does not configure authentication, password should be empty
       # https://github.com/netbox-community/netbox/discussions/7258
       password: ""
