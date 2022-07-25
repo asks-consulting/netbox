@@ -5,14 +5,17 @@ dependencies:
   - role: postgres # no secondary dependencies
     become: true
     tags: postgres
+    when: "'workstation' not in group_names"
   # https://codeberg.org/ansible/redis
   # redis role has been configured to not depend on php for netbox group
   - role: redis # no secondary dependencies
     become: true
     tags: redis
+    when: "'workstation' not in group_names"
   # https://codeberg.org/ansible/python3
   # dependency only for the sake of {{ python_version }} variable
   # otherwise that variable is not visible in netbox role
   - role: python3 # no secondary dependencies
     become: true 
     tags: python3
+    when: "'workstation' not in group_names"

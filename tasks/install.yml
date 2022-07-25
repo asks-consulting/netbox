@@ -56,7 +56,7 @@
         /usr/bin/python{{ python_version }} -m venv {{ netbox.base_path }}/venv
       become: true
       become_user: "{{ netbox.user.name }}"
-    
+
     # https://github.com/pallets/markupsafe/issues/282
     - name: "Pin markupsafe<2.1.0 in requirements.txt"
       ansible.builtin.lineinfile:
@@ -94,7 +94,7 @@
       ansible.builtin.stat:
         path: "{{ netbox.base_path }}/old_requirements.txt"
       register: netbox_old_requirements
-      
+
     - name: "Uninstall old pip requirements"
       ansible.builtin.pip:
         requirements: "{{ netbox.base_path }}/old_requirements.txt"
@@ -109,7 +109,7 @@
       ansible.builtin.stat:
         path: "{{ netbox.base_path }}/local_requirements.txt"
       register: netbox_local_requirements
-    
+
     - name: "Install pip local_requirements.txt"
       ansible.builtin.pip:
         requirements: "{{ netbox.base_path }}/local_requirements.txt"

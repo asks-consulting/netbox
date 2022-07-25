@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Netbox
+Type=Application
+Exec=/usr/bin/chromium-browser --new-window --app="https://{{ hostinfo.taipei.netbox }}"
+GenericName={{ hostinfo.taipei.netbox }}
+Comment=
+Categories=Network;WebDevelopment;
+Keywords=netbox;webapp;IP infrastructure management;
+StartupWMClass=chromium-app-netbox
+Icon={{ desktop_icon.dest }}
+Version=1.1
+{# empty MimeType line just to suppress "lacks Mimetype" warning during update-desktop-database #}
+MimeType=

@@ -17,3 +17,7 @@
     chdir: "{{ netbox.base_path }}"
   become: true
   become_user: "{{ netbox.user.name }}"
+
+- name: Update desktop entry database
+  ansible.builtin.command: >
+    /usr/bin/update-desktop-database -v {{ xdg_desktop_entries }}
