@@ -4,7 +4,7 @@ Description=Netbox housekeeping service
 [Service]
 User={{ netbox.user.name }}
 Group={{ netbox.user.name }}
-ExecStart={{ netbox.base_path }}/venv/bin/python {{ netbox.base_path }}/netbox/manage.py housekeeping
+ExecStart={{ netbox.path.base }}/venv/bin/python {{ netbox.path.base }}/netbox/manage.py housekeeping
 
 [Install]
 WantedBy=basic.target

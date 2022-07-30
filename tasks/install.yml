@@ -18,15 +18,15 @@
 - name: "Download the Netbox tarball v{{ netbox_version }}"
   ansible.builtin.get_url:
     url: "https://github.com/netbox-community/netbox/archive/refs/tags/v{{ netbox_version }}.tar.gz"
-    dest: "{{ netbox.tarball_path }}"
+    dest: "{{ netbox.path.tarball }}"
     owner: "{{ ansible_env.USER }}"
     group: "{{ ansible_env.USER }}"
     mode: u=rw,go=r
   register: netbox_installer
 
-- name: "Ensure {{ netbox.base_path }} exists"
+- name: "Ensure {{ netbox.path.base }} exists"
   ansible.builtin.file:
-    path: "{{ netbox.base_path }}"
+    path: "{{ netbox.path.base }}"
     state: directory
     owner: "{{ netbox.user.name }}"
     group: "{{ netbox.user.name }}"
@@ -40,10 +40,10 @@
   when: netbox_installer.changed or netbox_dir.changed
   block:
 
-    - name: "Unpack Netbox tarball into {{ netbox.base_path }}"
+    - name: "Unpack Netbox tarball into {{ netbox.path.base }}"
       ansible.builtin.unarchive:
         src: "{{ netbox_installer.dest }}"
-        dest: "{{ netbox.base_path }}"
+        dest: "{{ netbox.path.base }}"
         remote_src: yes
         owner: "{{ netbox.user.name }}"
         group: "{{ netbox.user.name }}"
@@ -53,20 +53,20 @@
     # https://docs.python.org/3/library/venv.html
     - name: "Create Python{{ python_version }} venv"
       ansible.builtin.command: >
-        /usr/bin/python{{ python_version }} -m venv {{ netbox.base_path }}/venv
+        /usr/bin/python{{ python_version }} -m venv {{ netbox.path.base }}/venv
       become: true
       become_user: "{{ netbox.user.name }}"
 
     # https://github.com/pallets/markupsafe/issues/282
     - name: "Pin markupsafe<2.1.0 in requirements.txt"
       ansible.builtin.lineinfile:
-        path: "{{ netbox.base_path }}/requirements.txt"
+        path: "{{ netbox.path.base }}/requirements.txt"
         line: "markupsafe<2.1.0"
       when: python_version is version('3.8', '<')
 
     # no longer needed under Python 3 for Netbox 2.6 and later (according to docs)
     - name: Clean up stale Python bytecode
-      ansible.builtin.command: find {{ netbox.base_path }} -name "*.pyc" -delete
+      ansible.builtin.command: find {{ netbox.path.base }} -name "*.pyc" -delete
       become: true
       become_user: "{{ netbox.user.name }}"
       when: netbox_version is version('2.6', '<')
@@ -75,7 +75,7 @@
       ansible.builtin.pip:
         name: pip
         state: latest
-        virtualenv: "{{ netbox.base_path }}/venv"
+        virtualenv: "{{ netbox.path.base }}/venv"
         virtualenv_python: "python{{ python_version }}"
       become: true
       become_user: "{{ netbox.user.name }}"
@@ -84,7 +84,7 @@
       ansible.builtin.pip:
         name: wheel
         state: latest
-        virtualenv: "{{ netbox.base_path }}/venv"
+        virtualenv: "{{ netbox.path.base }}/venv"
         virtualenv_python: "python{{ python_version }}"
       become: true
       become_user: "{{ netbox.user.name }}"
@@ -92,14 +92,14 @@
     # recent netbox versions don't include old_requirements.txt
     - name: Check if old_requirements.txt exist
       ansible.builtin.stat:
-        path: "{{ netbox.base_path }}/old_requirements.txt"
+        path: "{{ netbox.path.base }}/old_requirements.txt"
       register: netbox_old_requirements
 
     - name: "Uninstall old pip requirements"
       ansible.builtin.pip:
-        requirements: "{{ netbox.base_path }}/old_requirements.txt"
+        requirements: "{{ netbox.path.base }}/old_requirements.txt"
         state: absent
-        virtualenv: "{{ netbox.base_path }}/venv"
+        virtualenv: "{{ netbox.path.base }}/venv"
         virtualenv_python: "python{{ python_version }}"
       become: true
       become_user: "{{ netbox.user.name }}"
@@ -107,14 +107,14 @@
 
     - name: Check if local_requirements.txt exist
       ansible.builtin.stat:
-        path: "{{ netbox.base_path }}/local_requirements.txt"
+        path: "{{ netbox.path.base }}/local_requirements.txt"
       register: netbox_local_requirements
 
     - name: "Install pip local_requirements.txt"
       ansible.builtin.pip:
-        requirements: "{{ netbox.base_path }}/local_requirements.txt"
+        requirements: "{{ netbox.path.base }}/local_requirements.txt"
         state: present
-        virtualenv: "{{ netbox.base_path }}/venv"
+        virtualenv: "{{ netbox.path.base }}/venv"
         virtualenv_python: "python{{ python_version }}"
       become: true
       become_user: "{{ netbox.user.name }}"
@@ -123,9 +123,9 @@
     # We install and run Netbox from its own Python3 venv
     - name: "Install pip requirements for Netbox v{{ netbox_version }} using venv"
       ansible.builtin.pip:
-        requirements: "{{ netbox.base_path }}/requirements.txt"
+        requirements: "{{ netbox.path.base }}/requirements.txt"
         state: present
-        virtualenv: "{{ netbox.base_path }}/venv"
+        virtualenv: "{{ netbox.path.base }}/venv"
         virtualenv_python: "python{{ python_version }}"
       become: true
       become_user: "{{ netbox.user.name }}"

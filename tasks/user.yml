@@ -10,7 +10,7 @@
   ansible.builtin.user:
     name: "{{ netbox.user.name }}"
     shell: "{{ netbox.user.shell }}"
-    home: "{{ netbox.base_path }}"
+    home: "{{ netbox.path.base }}"
     create_home: no
     comment: "NetBox user"
     system: yes

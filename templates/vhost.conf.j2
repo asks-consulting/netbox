@@ -1,0 +1,19 @@
+<VirtualHost *:80>
+   ServerAdmin {{ netbox.config.vhost.email }}
+   ServerName {{ netbox.config.vhost.domain }}
+
+   Alias /{{ netbox.path.static | basename }} {{ netbox.path.static }}
+   <Directory {{ netbox.path.static }}>
+      Options Indexes FollowSymLinks MultiViews
+      AllowOverride None
+      Require all granted
+   </Directory>
+
+   <Location /{{ netbox.path.static | basename }}>
+      ProxyPass !
+   </Location>
+
+   Loglevel info
+   ErrorLog ${APACHE_LOG_DIR}/{{ netbox.config.vhost.domain }}_error.log
+   CustomLog ${APACHE_LOG_DIR}/{{ netbox.config.vhost.domain }}_access.log combined
+</VirtualHost>

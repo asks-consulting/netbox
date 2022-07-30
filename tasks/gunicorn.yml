@@ -6,7 +6,7 @@
   ansible.builtin.pip:
     name: gunicorn
     state: present
-    virtualenv: "{{ netbox.base_path }}/venv"
+    virtualenv: "{{ netbox.path.base }}/venv"
     virtualenv_python: "python{{ python_version }}"
   become: true
   become_user: "{{ netbox.user.name }}"
@@ -14,7 +14,7 @@
 - name: "Put gunicorn.py on target"
   ansible.builtin.template:
     src: gunicorn.py.j2
-    dest: "{{ netbox.base_path }}/gunicorn.py"
+    dest: "{{ netbox.path.base }}/gunicorn.py"
     owner: "{{ netbox.user.name }}"
     group: "{{ netbox.user.name }}"
     mode: ug=rwx,o=rx

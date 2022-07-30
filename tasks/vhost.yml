@@ -1,0 +1,22 @@
+---
+
+# https://groups.google.com/g/netbox-discuss/c/B1AHwhKMY54
+# https://ubuntu.com/blog/django-behind-a-proxy-fixing-absolute-urls
+
+- name: "Configure vhost {{ netbox.config.vhost.domain }}"
+  ansible.builtin.template:
+    src: vhost.conf.j2
+    dest: "/etc/apache2/sites-available/{{ netbox.config.vhost.domain }}.conf"
+    owner: root
+    group: root
+    mode: u=rw,g=r,o=r
+  notify: reload apache
+
+- name: "Check whether site {{ netbox.config.vhost.domain }} is already enabled"
+  ansible.builtin.stat:
+    path: "/etc/apache2/sites-enabled/{{ netbox.config.vhost.domain }}.conf"
+  register: vhost_enabled
+
+- name: "a2ensite {{ netbox.config.vhost.domain }}.conf"
+  ansible.builtin.command: "a2ensite {{ netbox.config.vhost.domain }}.conf"
+  when: not ( vhost_enabled.stat.exists | bool )

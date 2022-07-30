@@ -27,7 +27,7 @@
     # this task can fail in interesting ways:
     - name: Copy the NetBox working directory to controller
       ansible.posix.synchronize:
-        src: "{{ netbox.base_path }}/"
+        src: "{{ netbox.path.base }}/"
         dest: "{{ this_backup_tmp }}/"
         # in pull mode the remote host in context is the source
         mode: pull
@@ -61,7 +61,7 @@
         - name: Backup the compressed NetBox workdir archive
           ansible.builtin.copy:
             src: "{{ this_backup_compressed.dest }}"
-            dest: "{{ backup_root_path }}/hosts/{{ ansible_hostname }}/{{ this_backup_name }}/netbox-v{{ netbox_version }}.tgz"
+            dest: "{{ backup_root_path }}/hosts/{{ ansible_hostname }}/{{ this_backup_name }}/netbox-v{{ netbox_iversion }}.tgz"
 
         - name: Clean up the temporary backup
           ansible.builtin.file:
@@ -99,7 +99,7 @@
     - name: Copy compressed database to backup directory on BAY
       ansible.builtin.fetch:
         src: "{{ this_backup_database_dump }}"
-        dest: "{{ backup_root_path }}/hosts/{{ ansible_hostname }}/{{ this_backup_name }}/netbox-v{{ netbox_version }}.sql.gz"
+        dest: "{{ backup_root_path }}/hosts/{{ ansible_hostname }}/{{ this_backup_name }}/netbox-v{{ netbox_iversion }}.sql.gz"
         flat: yes
 
     - name: "Cleanup the dump from {{ db_admin_username }} HOMEDIR"

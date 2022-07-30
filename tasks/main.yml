@@ -6,17 +6,18 @@
   block:
 
     - ansible.builtin.import_tasks: version-check.yml
-      tags: always
-    
+      tags: backups-only
+
     - ansible.builtin.import_tasks: user.yml
     - ansible.builtin.import_tasks: database.yml
     - ansible.builtin.import_tasks: install.yml
-    
+
     # contains all tasks that write to the database
     - ansible.builtin.import_tasks: configure.yml
-    
+
+    # - ansible.builtin.import_tasks: vhost.yml
     - ansible.builtin.import_tasks: gunicorn.yml
-    
+
     - name: Backup database and working directory
       ansible.builtin.import_tasks: backup.yml
       tags: backups-only

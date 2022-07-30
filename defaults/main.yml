@@ -3,15 +3,19 @@
 netbox:
   # set a numeric version string, e.g., 3.1.8, or
   # set "latest" for the latest available release
-  version: "latest"
-  tarball_path: "{{ ansible_env.HOME }}/.cache"
-  base_path: /opt/netbox
-  media_path: /opt/netbox/netbox/media
+  version: "3.1.8"
+  # Minor NetBox releases (e.g., v3.1) are published three times a year. These
+  # typically introduce major new features and may contain breaking API changes.
+  path:
+    base: /opt/netbox
+    media: /opt/netbox/netbox/media
+    static: /opt/netbox/netbox/static
+    tarball: "{{ ansible_env.HOME }}/.cache"
   restore:
     # to restore from database dump, set database: true
     database: false
     # and put the database dump file in files/
-    path: "netbox-v2.11.12.sql"
+    path: "netbox-v3.1.8.sql.gz"
   user:
     name: netbox
     shell: /usr/sbin/nologin
@@ -21,9 +25,8 @@ netbox:
       - "::1"
       - "127.0.0.1"
     gunicorn:
-      # not 127.0.0.1 because we plan to proxy from the LXC server
-      host: 0.0.0.0
-      port: 8001
+      host: "{{ proxybox.netbox.interface }}"
+      port: "{{ proxybox.netbox.port }}"
     redis:
       # redis_port: 0 is defined in redis role
       port: "{{ redis_port }}"
@@ -35,3 +38,8 @@ netbox:
       # note! our Redis role does not configure authentication, password should be empty
       # https://github.com/netbox-community/netbox/discussions/7258
       password: ""
+    vhost:
+      host: "{{ proxybox.netbox.interface }}"
+      port: "{{ proxybox.netbox.port }}"
+      domain: "{{ hostinfo.taipei.netbox }}"
+      email: "{{ mailinfo.asks.webmaster }}"

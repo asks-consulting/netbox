@@ -1,6 +1,11 @@
 ---
 
 dependencies:
+  # https://codeberg.org/ansible/apache
+  - role: apache
+    become: true
+    tags: apache
+    when: "'workstation' not in group_names"
   # https://codeberg.org/ansible/postgres
   - role: postgres # no secondary dependencies
     become: true
