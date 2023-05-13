@@ -14,88 +14,10 @@
         method: GET
         status_code: 200
         url: https://api.github.com/repos/netbox-community/netbox/releases/latest
+      run_once: true
+      delegate_to: localhost
       register: netbox_uri
 
-    # - debug:
-    #     var: netbox_uri
-    # ok: [netbox] => {
-    #     "netbox_uri": {
-    #         "accept_ranges": "bytes",
-    #         "access_control_allow_origin": "*",
-    #         "access_control_expose_headers": "ETag, Link, Location, Retry-After, X-GitHub-OTP, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Used, X-RateLimit-Resource, X-RateLimit-Reset, X-OAuth-Scopes, X-Accepted-OAuth-Scopes, X-Poll-Interval, X-GitHub-Media-Type, X-GitHub-SSO, X-GitHub-Request-Id, Deprecation, Sunset",
-    #         "cache_control": "public, max-age=60, s-maxage=60",
-    #         "changed": false,
-    #         "connection": "close",
-    #         "content_length": "3640",
-    #         "content_security_policy": "default-src 'none'",
-    #         "content_type": "application/json; charset=utf-8",
-    #         "cookies": {},
-    #         "cookies_string": "",
-    #         "date": "Sun, 27 Feb 2022 01:38:29 GMT",
-    #         "elapsed": 0,
-    #         "etag": "W/\"614b8fb7d58ad0f4496ae35b734e945b5746c6b99ef81627495964c2eecdf9e8\"",
-    #         "failed": false,
-    #         "json": {
-    #             "assets": [],
-    #             "assets_url": "https://api.github.com/repos/netbox-community/netbox/releases/59610803/assets",
-    #             "author": {
-    #                 "avatar_url": "https://avatars.githubusercontent.com/u/13487278?v=4",
-    #                 "events_url": "https://api.github.com/users/jeremystretch/events{/privacy}",
-    #                 "followers_url": "https://api.github.com/users/jeremystretch/followers",
-    #                 "following_url": "https://api.github.com/users/jeremystretch/following{/other_user}",
-    #                 "gists_url": "https://api.github.com/users/jeremystretch/gists{/gist_id}",
-    #                 "gravatar_id": "",
-    #                 "html_url": "https://github.com/jeremystretch",
-    #                 "id": 13487278,
-    #                 "login": "jeremystretch",
-    #                 "node_id": "MDQ6VXNlcjEzNDg3Mjc4",
-    #                 "organizations_url": "https://api.github.com/users/jeremystretch/orgs",
-    #                 "received_events_url": "https://api.github.com/users/jeremystretch/received_events",
-    #                 "repos_url": "https://api.github.com/users/jeremystretch/repos",
-    #                 "site_admin": false,
-    #                 "starred_url": "https://api.github.com/users/jeremystretch/starred{/owner}{/repo}",
-    #                 "subscriptions_url": "https://api.github.com/users/jeremystretch/subscriptions",
-    #                 "type": "User",
-    #                 "url": "https://api.github.com/users/jeremystretch"
-    #             },
-    #             "body": "## Enhancements\r\n\r\n* [#7150](https://github.com/netbox-community/netbox/issues/7150) - Linkify devices on the far side of a rack elevation\r\n* [#8398](https://github.com/netbox-community/netbox/issues/8398) - Embiggen configuration form fields for banner message content\r\n* [#8556](https://github.com/netbox-community/netbox/issues/8556) - Add full username column to changelog table\r\n* [#8620](https://github.com/netbox-community/netbox/issues/8620) - Enable tab completion for `nbshell`\r\n\r\n## Bug Fixes\r\n\r\n* [#8331](https://github.com/netbox-community/netbox/issues/8331) - Implement `replaceAll` string utility function to improve browser compatibility\r\n* [#8391](https://github.com/netbox-community/netbox/issues/8391) - Null date columns should return empty strings during CSV export\r\n* [#8548](https://github.com/netbox-community/netbox/issues/8548) - Fix display of VC members when position is zero\r\n* [#8561](https://github.com/netbox-community/netbox/issues/8561) - Include option to connect a rear port to a console port\r\n* [#8564](https://github.com/netbox-community/netbox/issues/8564) - Fix errant table configuration key `available_columns`\r\n* [#8577](https://github.com/netbox-community/netbox/issues/8577) - Show contact assignment counts in global search results\r\n* [#8578](https://github.com/netbox-community/netbox/issues/8578) - Object change log tables should honor user's configured preferences\r\n* [#8604](https://github.com/netbox-community/netbox/issues/8604) - Fix tag filter on config context list filter form\r\n* [#8609](https://github.com/netbox-community/netbox/issues/8609) - Display validation error when attempting to assign VLANs to interface with no mode during bulk edit\r\n* [#8611](https://github.com/netbox-community/netbox/issues/8611) - Fix bulk editing for certain custom link, webhook, and journal entry fields",
-    #             "created_at": "2022-02-15T14:31:00Z",
-    #             "draft": false,
-    #             "html_url": "https://github.com/netbox-community/netbox/releases/tag/v3.1.8",
-    #             "id": 59610803,
-    #             "name": "v3.1.8 - 2022-02-15",
-    #             "node_id": "RE_kwDOAyWctM4DjZaz",
-    #             "prerelease": false,
-    #             "published_at": "2022-02-15T14:31:39Z",
-    #             "tag_name": "v3.1.8",
-    #             "tarball_url": "https://api.github.com/repos/netbox-community/netbox/tarball/v3.1.8",
-    #             "target_commitish": "master",
-    #             "upload_url": "https://uploads.github.com/repos/netbox-community/netbox/releases/59610803/assets{?name,label}",
-    #             "url": "https://api.github.com/repos/netbox-community/netbox/releases/59610803",
-    #             "zipball_url": "https://api.github.com/repos/netbox-community/netbox/zipball/v3.1.8"
-    #         },
-    #         "last_modified": "Tue, 15 Feb 2022 14:31:39 GMT",
-    #         "msg": "OK (3640 bytes)",
-    #         "redirected": false,
-    #         "referrer_policy": "origin-when-cross-origin, strict-origin-when-cross-origin",
-    #         "server": "GitHub.com",
-    #         "status": 200,
-    #         "strict_transport_security": "max-age=31536000; includeSubdomains; preload",
-    #         "url": "https://api.github.com/repos/netbox-community/netbox/releases/latest",
-    #         "vary": "Accept, Accept-Encoding, Accept, X-Requested-With",
-    #         "x_content_type_options": "nosniff",
-    #         "x_frame_options": "deny",
-    #         "x_github_media_type": "github.v3; format=json",
-    #         "x_github_request_id": "A47E:1DD6:309A1B:346987:621AD615",
-    #         "x_ratelimit_limit": "60",
-    #         "x_ratelimit_remaining": "57",
-    #         "x_ratelimit_reset": "1645927812",
-    #         "x_ratelimit_resource": "core",
-    #         "x_ratelimit_used": "3",
-    #         "x_xss_protection": "0"
-    #     }
-    # }
-    
     # # [1:] strips the first character ("v" in this case) from the version string
     - name: Latest Netbox version
       ansible.builtin.set_fact:
