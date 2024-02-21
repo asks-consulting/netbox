@@ -1,0 +1,15 @@
+---
+
+# the idea behind this task is to make the log-file more useful in
+# determining which commit of a role was executed during a play.
+# Ideally, this message should also indicate whether the repo was
+# dirty (untracked changes) or not, but that's not yet implemented here.
+- name: Log the last commit and git repo status to playbook log-file
+  local_action: >
+    shell git -C {{ role_path }} log
+    --pretty="Role '{{ role_name }}' last commit %h %ci by %cn" -1 >>
+    logbook-{{ inventory_hostname }}.log
+  args:
+    chdir: "{{ playbook_dir }}"
+  become: true
+  become_user: "{{ local_user }}"
