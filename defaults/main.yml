@@ -1,16 +1,18 @@
 ---
 
-netbox:
+netbox_default:
   # set a numeric version string, e.g., 3.1.8, or
   # set "latest" for the latest available release
   version: "3.1.8"
-  # Minor NetBox releases (e.g., v3.1) are published three times a year. These
+  # minor NetBox releases (e.g., v3.1) are published three times a year. These
   # typically introduce major new features and may contain breaking API changes.
   path:
     base: /opt/netbox
     media: /opt/netbox/netbox/media
     static: /opt/netbox/netbox/static
     tarball: "{{ ansible_env.HOME }}/.cache"
+  # this part should probably be broken out of the dict
+  # because how are we supposed to reset it from the CLI otherwise?
   restore:
     # to restore from database dump, set database: true
     database: false
@@ -20,18 +22,41 @@ netbox:
     name: netbox
     shell: /usr/sbin/nologin
   config:
+    # https://netbox.readthedocs.io/en/stable/installation/3-netbox/#allowed_hosts
     default_allowed_hosts:
       - "localhost"
       - "::1"
       - "127.0.0.1"
+    # https://netbox.readthedocs.io/en/stable/installation/3-netbox/#secret_key
+    secret_key: "yoursecretkey"
+    # only permit authenticated users to access any part of NetBox
+    login_required: true
+    # https://netbox.readthedocs.io/en/stable/installation/3-netbox/#database
+    database:
+      name: netbox
+      user: netbox
+      pass: "secretpassword"
+      host: localhost
+      port: 5432
+      admin_username: "postgres"
+    superuser:
+      user: admin
+      email: "superuser@example.com"
+      name: "Tony Soprano"
+      pass: "secretpassword"
+      api_token: "secrettoken"
     gunicorn:
-      host: "{{ proxybox.netbox.interface }}"
-      port: "{{ proxybox.netbox.port }}"
+      host: "0.0.0.0"
+      port: 8001
+    mail:
+      server: smtp.example.com
+      port: 587
+      user: postbot@example.com
+      pass: "secretpassword"
+      from: postbot@example.com
     redis:
-      # redis_port: 0 is defined in redis role
-      port: "{{ redis_port }}"
-      # redis_socket.path: /var/run/redis/redis-server.sock is defined in redis role or group_vars
-      host: "{{ redis_socket.path }}"
+      port: 0
+      host: "/var/run/redis.sock"
       # https://github.com/netbox-community/netbox/issues/4377
       # this role hacks netbox's settings.py to force use of redis socket
       socket: true
@@ -39,7 +64,12 @@ netbox:
       # https://github.com/netbox-community/netbox/discussions/7258
       password: ""
     vhost:
-      host: "{{ proxybox.netbox.interface }}"
-      port: "{{ proxybox.netbox.port }}"
-      domain: "{{ hostinfo.taipei.netbox }}"
-      email: "{{ mailinfo.asks.webmaster }}"
+      host: "0.0.0.0"
+      port: 8001
+      domain: "netbox.example.com"
+      email: "webmaster@example.com"
+
+
+# set netbox_testing to true to enable debug messages
+# easiest via --extra-vars "{netbox_testing: true}"
+netbox_testing: false

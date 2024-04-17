@@ -8,18 +8,18 @@
     name: acl
     state: present
 
-- name: "Create pgsql database user {{ DB_USER }}"
+- name: "Create pgsql database user {{ netbox.config.database.user }}"
   community.postgresql.postgresql_user:
-    name: "{{ DB_USER }}"
-    password: "{{ DB_PASSWORD }}"
+    name: "{{ netbox.config.database.user }}"
+    password: "{{ netbox.config.database.pass }}"
     # https://dba.stackexchange.com/a/263911
     role_attr_flags: CREATEDB,CREATEROLE,INHERIT,NOSUPERUSER,LOGIN
     encrypted: yes
     state: present
     expires: infinity
-    port: "{{ DB_PORT }}"
+    port: "{{ netbox.config.database.port }}"
   become: true
-  become_user: "{{ db_admin_username }}" # defined in group_vars and postgres/defaults
+  become_user: "{{ netbox.config.database.admin_username }}" # defined in group_vars and postgres/defaults
 
 # check what pgsql databases exist
 # https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_info_module.html
@@ -28,29 +28,29 @@
     filter:
       - "databases"
   become: true
-  become_user: "{{ db_admin_username }}"
+  become_user: "{{ netbox.config.database.admin_username }}"
   register: netbox_psql_info
 
-- name: "Create empty database {{ DB_NAME }} (if not already exist)"
+- name: "Create empty database {{ netbox.config.database.name }} (if not already exist)"
   community.postgresql.postgresql_db:
-    name: "{{ DB_NAME }}"
+    name: "{{ netbox.config.database.name }}"
     encoding: UTF-8
     state: present
-    owner: "{{ DB_USER }}"
-    port: "{{ DB_PORT }}"
+    owner: "{{ netbox.config.database.user }}"
+    port: "{{ netbox.config.database.port }}"
   become: true
-  become_user: "{{ db_admin_username }}"
-  when: "DB_NAME not in netbox_psql_info.databases"
+  become_user: "{{ netbox.config.database.admin_username }}"
+  when: "netbox.config.database.name not in netbox_psql_info.databases"
 
-- name: "Grant our pgsql user {{ DB_USER }} ALL privileges on database {{ DB_NAME }}"
+- name: "Grant our pgsql user {{ netbox.config.database.user }} ALL privileges on database {{ netbox.config.database.name }}"
   community.postgresql.postgresql_user:
-    db: "{{ DB_NAME }}"
+    db: "{{ netbox.config.database.name }}"
     priv: ALL
-    name: "{{ DB_USER }}"
-    password: "{{ DB_PASSWORD }}"
+    name: "{{ netbox.config.database.user }}"
+    password: "{{ netbox.config.database.pass }}"
     encrypted: yes
     state: present
     expires: infinity
-    port: "{{ DB_PORT }}"
+    port: "{{ netbox.config.database.port }}"
   become: true
-  become_user: "{{ db_admin_username }}" # defined in group_vars
+  become_user: "{{ netbox.config.database.admin_username }}" # defined in group_vars

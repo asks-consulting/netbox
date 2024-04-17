@@ -1,0 +1,26 @@
+---
+
+# "netbox" variable should be defined somewhere with higher priority, such
+# as in group_vars, play vars or role vars
+
+# if variable "netbox" is defined, merge it with "netbox_default"
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/combine_filter.html
+- name: Merge netbox default variable
+  run_once: true
+  when: netbox is defined
+  tags: default
+  ansible.builtin.set_fact:
+    netbox: "{{ netbox_default | combine(netbox, recursive=True) }}"
+
+# if "netbox" is not defined, simply assign "netbox_default" -> "netbox"
+- name: Use netbox default variable
+  run_once: true
+  when: netbox is not defined
+  tags: default
+  ansible.builtin.set_fact:
+    netbox: "{{ netbox_default }}"
+
+- name: Inspect "netbox" variable
+  debug:
+    var: netbox
+  when: netbox_testing | bool

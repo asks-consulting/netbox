@@ -1,9 +1,9 @@
 # NetBox
 
-This Ansible role is designed to run 
+This Ansible role is designed to run
 [NetBox](https://github.com/netbox-community/netbox)
 in an LXC container running Ubuntu 20.04 with
-[Python 3.8](https://codeberg.org/ansible/python3), 
+[Python 3.8](https://codeberg.org/ansible/python3),
 [PostgreSQL 12.10](https://codeberg.org/ansible/postgres)
 and [Redis 5.0](https://codeberg.org/ansible/redis).
 
@@ -15,12 +15,12 @@ This role handles all steps of setting up a fresh NetBox instance or restoring
 from an existing database dump non-interactively, including superuser creation.
 
 This role employs an ugly hack in `settings.py` to force NetBox to
-use Redis via socket instead of port. I happen to have other services 
+use Redis via socket instead of port. I happen to have other services
 on the same container that already used Redis socket, so that's why.
 I don't expect this hack to survive a NetBox upgrade, so beware!
 Hopefully NetBox will support Redis sockets soon and we can retire this hack.
 
-I am grateful to the stellar documentation and helpful support forums 
+I am grateful to the stellar documentation and helpful support forums
 of the NetBox project, without which I could not have completed this role
 nor kept NetBox running for several years.
 
@@ -63,7 +63,7 @@ nor kept NetBox running for several years.
    SSLCertificateKeyFile   /etc/letsencrypt/live/netbox.example.se/privkey.pem
    SSLCertificateFile      /etc/letsencrypt/live/netbox.example.se/cert.pem
    SSLCertificateChainFile /etc/letsencrypt/live/netbox.example.se/chain.pem
-	
+
    ErrorLog ${APACHE_LOG_DIR}/netbox.example.se_error.log
    CustomLog ${APACHE_LOG_DIR}/netbox.example.se_access.log combined
 </VirtualHost>
@@ -115,7 +115,6 @@ nor kept NetBox running for several years.
 Playbook-level variables:
 ```
 psql_version: 12
-db_admin_username: postgres
 redis_socket.path: "/var/run/redis/redis-server.sock"
 php_version: 7.3
 backup_root_path: /storage/backup/

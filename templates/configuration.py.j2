@@ -8,22 +8,22 @@
 # access to the server via any other hostnames. The first FQDN in the list will be treated as the preferred name.
 #
 # Example: ALLOWED_HOSTS = ['netbox.example.com', 'netbox.internal.local']
-ALLOWED_HOSTS = {{ ALLOWED_HOSTS }}
+ALLOWED_HOSTS = {{ netbox.config.default_allowed_hosts }}
 
 # PostgreSQL database configuration.
 DATABASE = {
-    'NAME': '{{ DB_NAME }}',           # Database name
-    'USER': '{{ DB_USER }}',           # PostgreSQL username
-    'PASSWORD': '{{ DB_PASSWORD }}',   # PostgreSQL password
-    'HOST': '{{ DB_HOST }}',           # Database server
-    'PORT': '{{ DB_PORT }}',           # Database port (leave blank for default)
+    'NAME': '{{ netbox.config.database.name }}',           # Database name
+    'USER': '{{ netbox.config.database.user }}',           # PostgreSQL username
+    'PASSWORD': '{{ netbox.config.database.pass }}',   # PostgreSQL password
+    'HOST': '{{ netbox.config.database.host }}',           # Database server
+    'PORT': '{{ netbox.config.database.port }}',           # Database port (leave blank for default)
 }
 
 # This key is used for secure generation of random numbers and strings. It must never be exposed outside of this file.
 # For optimal security, SECRET_KEY should be at least 50 characters in length and contain a mix of letters, numbers, and
 # symbols. NetBox will not run without this defined. For more information, see
 # https://docs.djangoproject.com/en/dev/ref/settings/#std:setting-SECRET_KEY
-SECRET_KEY = '{{ SECRET_KEY }}'
+SECRET_KEY = '{{ netbox.config.secret_key }}'
 
 
 #########################
@@ -36,7 +36,7 @@ SECRET_KEY = '{{ SECRET_KEY }}'
 # application errors (assuming correct email settings are provided).
 ADMINS = [
     # ['John Doe', 'jdoe@example.com'],
-    [ '{{ SUPERUSER_NAME }}', '{{ SUPERUSER_EMAIL }}' ]
+    [ '{{ netbox.config.superuser.name }}', '{{ netbox.config.superuser.email }}' ]
 ]
 
 # Optionally display a persistent banner at the top and/or bottom of every page. HTML is allowed. To display the same
@@ -72,12 +72,12 @@ DEBUG = False
 
 # Email settings
 EMAIL = {
-    'SERVER': '{{ EMAIL_SERVER }}',
-    'PORT': {{ EMAIL_PORT }},
-    'USERNAME': '{{ EMAIL_USERNAME }}',
-    'PASSWORD': '{{ EMAIL_PASSWORD }}',
+    'SERVER': '{{ netbox.config.mail.server }}',
+    'PORT': {{ netbox.config.mail.port }},
+    'USERNAME': '{{ netbox.config.mail.user }}',
+    'PASSWORD': '{{ netbox.config.mail.pass }}',
     'TIMEOUT': 10,  # seconds
-    'FROM_EMAIL': '{{ EMAIL_FROM }}',
+    'FROM_EMAIL': '{{ netbox.config.mail.from }}',
 }
 
 # Enforcement of unique IP space can be toggled on a per-VRF basis. To enforce unique IP space within the global table
@@ -90,7 +90,7 @@ LOGGING = {}
 
 # Setting this to True will permit only authenticated users to access any part of NetBox. By default, anonymous users
 # are permitted to access most data in NetBox (excluding secrets) but not make any changes.
-LOGIN_REQUIRED = {{ LOGIN_REQUIRED }}
+LOGIN_REQUIRED = {{ netbox.config.login_required }}
 
 # The length of time (in seconds) for which a user will remain logged into the web UI before being prompted to
 # re-authenticate. (Default: 1209600 [14 days])

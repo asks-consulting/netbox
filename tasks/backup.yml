@@ -77,9 +77,9 @@
 - name: Backup database
   block:
 
-    - name: "Write database to {{ db_admin_username }} HOMEDIR"
+    - name: "Write database to {{ netbox.config.database.admin_username }} HOMEDIR"
       ansible.builtin.set_fact:
-        this_backup_database_dump: "/var/lib/postgresql/{{ DB_NAME }}-{{ this_backup_timestamp }}.sql.gz"
+        this_backup_database_dump: "/var/lib/postgresql/{{ netbox.config.database.name }}-{{ this_backup_timestamp }}.sql.gz"
 
     # permissions are tricky here
     # postgres user must be used to dump the database,
@@ -88,11 +88,11 @@
     # which leaves us no way to reliable record the target destination, for example
     - name: Dump database (compressed)
       community.postgresql.postgresql_db:
-        name: "{{ DB_NAME }}"
+        name: "{{ netbox.config.database.name }}"
         state: dump
         target: "{{ this_backup_database_dump }}"
       become: true
-      become_user: "{{ db_admin_username }}"
+      become_user: "{{ netbox.config.database.admin_username }}"
 
     # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/fetch_module.html
     # unless the database is compressed, this fetch takes forever (even with compression it takes a while)
@@ -102,7 +102,7 @@
         dest: "{{ backup_root_path }}/hosts/{{ ansible_hostname }}/{{ this_backup_name }}/netbox-v{{ netbox_iversion }}.sql.gz"
         flat: yes
 
-    - name: "Cleanup the dump from {{ db_admin_username }} HOMEDIR"
+    - name: "Cleanup the dump from {{ netbox.config.database.admin_username }} HOMEDIR"
       ansible.builtin.file:
         path: "{{ this_backup_database_dump }}"
         state: absent

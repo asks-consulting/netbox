@@ -16,35 +16,35 @@
         owner: "{{ netbox.user.name }}"
         group: "{{ netbox.user.name }}"
 
-    - name: "Drop database {{ DB_NAME }}"
+    - name: "Drop database {{ netbox.config.database.name }}"
       community.postgresql.postgresql_db:
-        name: "{{ DB_NAME }}"
+        name: "{{ netbox.config.database.name }}"
         encoding: UTF-8
         state: absent
-        owner: "{{ DB_USER }}"
-        port: "{{ DB_PORT }}"
+        owner: "{{ netbox.config.database.user }}"
+        port: "{{ netbox.config.database.port }}"
       become: true
-      become_user: "{{ db_admin_username }}"
+      become_user: "{{ netbox.config.database.admin_username }}"
 
-    - name: "Create empty database {{ DB_NAME }}"
+    - name: "Create empty database {{ netbox.config.database.name }}"
       community.postgresql.postgresql_db:
-        name: "{{ DB_NAME }}"
+        name: "{{ netbox.config.database.name }}"
         encoding: UTF-8
         state: present
-        owner: "{{ DB_USER }}"
-        port: "{{ DB_PORT }}"
+        owner: "{{ netbox.config.database.user }}"
+        port: "{{ netbox.config.database.port }}"
       become: true
-      become_user: "{{ db_admin_username }}"
+      become_user: "{{ netbox.config.database.admin_username }}"
 
     - name: "Restore database"
       community.postgresql.postgresql_db:
-        name: "{{ DB_NAME }}"
-        owner: "{{ DB_USER }}"
-        port: "{{ DB_PORT }}"
+        name: "{{ netbox.config.database.name }}"
+        owner: "{{ netbox.config.database.user }}"
+        port: "{{ netbox.config.database.port }}"
         state: restore
         target: "{{ netbox.path.base }}/netbox.sql"
       become: true
-      become_user: "{{ db_admin_username }}"
+      become_user: "{{ netbox.config.database.admin_username }}"
 
     - name: Delete the dump from the target
       ansible.builtin.file:
@@ -92,7 +92,7 @@
     chdir: "{{ netbox.path.base }}"
   environment:
     # required for 3.1.x -> 3.2.x upgrade to work
-    NETBOX_DELETE_LEGACY_DATA: 1
+    NETBOX_DELETE_LEGACY_DATA: "1"
   become: true
   become_user: "{{ netbox.user.name }}"
 

@@ -1,5 +1,10 @@
 ---
 
+- name: Merge default variable
+  ansible.builtin.import_tasks: merge-defaults.yml
+  tags:
+    - default
+
 
 - name: Setup NetBox
   when: group_names is not search("workstation")
@@ -31,3 +36,4 @@
 - ansible.builtin.import_tasks: log-git-state.yml
   tags:
     - log-git-state
+    - backups-only

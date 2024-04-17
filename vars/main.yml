@@ -1,28 +1,3 @@
-# https://netbox.readthedocs.io/en/stable/installation/3-netbox/#allowed_hosts
-# https://blog.crisp.se/2016/10/20/maxwenzin/how-to-append-to-lists-in-ansible
-ALLOWED_HOSTS: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/info subkey=ALLOWED_HOSTS') + netbox.config.default_allowed_hosts }}"
+---
 
-# https://netbox.readthedocs.io/en/stable/installation/3-netbox/#database
-DB_NAME: netbox
-DB_USER: netbox
-DB_PASSWORD: "{{ lookup('community.general.passwordstore', 'hosts/taipei/psql/users/netbox') }}"
-DB_HOST: localhost
-DB_PORT: 5432
-
-# https://netbox.readthedocs.io/en/stable/installation/3-netbox/#secret_key
-SECRET_KEY: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/info subkey=SECRET_KEY') }}"
-
-SUPERUSER_EMAIL: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/users/admin subkey=email') }}"
-SUPERUSER_USER: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/users/admin subkey=usr') }}"
-SUPERUSER_NAME: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/users/admin subkey=name') }}"
-SUPERUSER_PASSWORD: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/users/admin') }}"
-SUPERUSER_API_TOKEN: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/info subkey=SUPERUSER_API_TOKEN') }}"
-
-EMAIL_SERVER: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/info subkey=EMAIL_SERVER') }}"
-EMAIL_PORT: 587
-EMAIL_USERNAME: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/info subkey=EMAIL_USERNAME') }}"
-EMAIL_PASSWORD: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/info subkey=EMAIL_PASSWORD') }}"
-EMAIL_FROM: "{{ lookup('community.general.passwordstore', 'hosts/taipei/netbox/info subkey=EMAIL_FROM') }}"
-
-# Setting this to True will permit only authenticated users to access any part of NetBox
-LOGIN_REQUIRED: true
+local_user: "{{ lookup('env', 'USER') }}"
