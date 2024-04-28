@@ -7,7 +7,7 @@
 
 
 - name: Setup NetBox
-  when: group_names is not search("workstation")
+  when: not (host_restrictions | bool) or group_names is not search("workstation")
   block:
 
     - ansible.builtin.import_tasks: version-check.yml
@@ -30,7 +30,7 @@
 
 
 - ansible.builtin.import_tasks: desktop-entry.yml
-  when: group_names is search("workstation")
+  when: not (host_restrictions | bool) or group_names is search("workstation")
   tags: desktop-entry
 
 - ansible.builtin.import_tasks: log-git-state.yml

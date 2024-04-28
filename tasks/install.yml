@@ -32,101 +32,109 @@
     group: "{{ netbox.user.name }}"
   register: netbox_dir
 
+# https://docs.netbox.dev/en/stable/installation/3-netbox/#run-the-upgrade-script
+- name: Run upgrade.sh
+  ansible.builtin.shell: ./upgrade.sh
+  args:
+    chdir: "{{ netbox.path.base }}"
+    executable: /bin/bash
+  become: true
 
-# this block includes Netbox's upgrade.sh script in "ansiblified" form
-# with fixes to correct for undocumented version incompatibility for markupsafe
-# I discovered while installing Netbox v2.5.12
-- name: Unpack Netbox and setup Python venv
-  when: netbox_installer.changed or netbox_dir.changed
-  block:
 
-    - name: "Unpack Netbox tarball into {{ netbox.path.base }}"
-      ansible.builtin.unarchive:
-        src: "{{ netbox_installer.dest }}"
-        dest: "{{ netbox.path.base }}"
-        remote_src: yes
-        owner: "{{ netbox.user.name }}"
-        group: "{{ netbox.user.name }}"
-        extra_opts: "--strip-components=1"
+# # this block includes Netbox's upgrade.sh script in "ansiblified" form
+# # with fixes to correct for undocumented version incompatibility for markupsafe
+# # I discovered while installing Netbox v2.5.12
+# - name: Unpack Netbox and setup Python venv
+#   when: netbox_installer.changed or netbox_dir.changed
+#   block:
 
-    # make sure the python venv we create uses right python3.x version
-    # https://docs.python.org/3/library/venv.html
-    - name: "Create Python{{ python_version }} venv"
-      ansible.builtin.command: >
-        /usr/bin/python{{ python_version }} -m venv {{ netbox.path.base }}/venv
-      become: true
-      become_user: "{{ netbox.user.name }}"
+#     - name: "Unpack Netbox tarball into {{ netbox.path.base }}"
+#       ansible.builtin.unarchive:
+#         src: "{{ netbox_installer.dest }}"
+#         dest: "{{ netbox.path.base }}"
+#         remote_src: yes
+#         owner: "{{ netbox.user.name }}"
+#         group: "{{ netbox.user.name }}"
+#         extra_opts: "--strip-components=1"
 
-    # https://github.com/pallets/markupsafe/issues/282
-    - name: "Pin markupsafe<2.1.0 in requirements.txt"
-      ansible.builtin.lineinfile:
-        path: "{{ netbox.path.base }}/requirements.txt"
-        line: "markupsafe<2.1.0"
-      when: python_version is version('3.8', '<')
+#     # make sure the python venv we create uses right python3.x version
+#     # https://docs.python.org/3/library/venv.html
+#     - name: "Create Python{{ python_version }} venv"
+#       ansible.builtin.command: >
+#         /usr/bin/python{{ python_version }} -m venv {{ netbox.path.base }}/venv
+#       become: true
+#       become_user: "{{ netbox.user.name }}"
 
-    # no longer needed under Python 3 for Netbox 2.6 and later (according to docs)
-    - name: Clean up stale Python bytecode
-      ansible.builtin.command: find {{ netbox.path.base }} -name "*.pyc" -delete
-      become: true
-      become_user: "{{ netbox.user.name }}"
-      when: netbox_version is version('2.6', '<')
+#     # https://github.com/pallets/markupsafe/issues/282
+#     - name: "Pin markupsafe<2.1.0 in requirements.txt"
+#       ansible.builtin.lineinfile:
+#         path: "{{ netbox.path.base }}/requirements.txt"
+#         line: "markupsafe<2.1.0"
+#       when: python_version is version('3.8', '<')
 
-    - name: Upgrade pip itself
-      ansible.builtin.pip:
-        name: pip
-        state: latest
-        virtualenv: "{{ netbox.path.base }}/venv"
-        virtualenv_python: "python{{ python_version }}"
-      become: true
-      become_user: "{{ netbox.user.name }}"
+#     # no longer needed under Python 3 for Netbox 2.6 and later (according to docs)
+#     - name: Clean up stale Python bytecode
+#       ansible.builtin.command: find {{ netbox.path.base }} -name "*.pyc" -delete
+#       become: true
+#       become_user: "{{ netbox.user.name }}"
+#       when: netbox_version is version('2.6', '<')
 
-    - name: Install Python system packages (pip install wheel)
-      ansible.builtin.pip:
-        name: wheel
-        state: latest
-        virtualenv: "{{ netbox.path.base }}/venv"
-        virtualenv_python: "python{{ python_version }}"
-      become: true
-      become_user: "{{ netbox.user.name }}"
+#     - name: Upgrade pip itself
+#       ansible.builtin.pip:
+#         name: pip
+#         state: latest
+#         virtualenv: "{{ netbox.path.base }}/venv"
+#         virtualenv_python: "python{{ python_version }}"
+#       become: true
+#       become_user: "{{ netbox.user.name }}"
 
-    # recent netbox versions don't include old_requirements.txt
-    - name: Check if old_requirements.txt exist
-      ansible.builtin.stat:
-        path: "{{ netbox.path.base }}/old_requirements.txt"
-      register: netbox_old_requirements
+#     - name: Install Python system packages (pip install wheel)
+#       ansible.builtin.pip:
+#         name: wheel
+#         state: latest
+#         virtualenv: "{{ netbox.path.base }}/venv"
+#         virtualenv_python: "python{{ python_version }}"
+#       become: true
+#       become_user: "{{ netbox.user.name }}"
 
-    - name: "Uninstall old pip requirements"
-      ansible.builtin.pip:
-        requirements: "{{ netbox.path.base }}/old_requirements.txt"
-        state: absent
-        virtualenv: "{{ netbox.path.base }}/venv"
-        virtualenv_python: "python{{ python_version }}"
-      become: true
-      become_user: "{{ netbox.user.name }}"
-      when: netbox_old_requirements.stat.exists | bool
+#     # recent netbox versions don't include old_requirements.txt
+#     - name: Check if old_requirements.txt exist
+#       ansible.builtin.stat:
+#         path: "{{ netbox.path.base }}/old_requirements.txt"
+#       register: netbox_old_requirements
 
-    - name: Check if local_requirements.txt exist
-      ansible.builtin.stat:
-        path: "{{ netbox.path.base }}/local_requirements.txt"
-      register: netbox_local_requirements
+#     - name: "Uninstall old pip requirements"
+#       ansible.builtin.pip:
+#         requirements: "{{ netbox.path.base }}/old_requirements.txt"
+#         state: absent
+#         virtualenv: "{{ netbox.path.base }}/venv"
+#         virtualenv_python: "python{{ python_version }}"
+#       become: true
+#       become_user: "{{ netbox.user.name }}"
+#       when: netbox_old_requirements.stat.exists | bool
 
-    - name: "Install pip local_requirements.txt"
-      ansible.builtin.pip:
-        requirements: "{{ netbox.path.base }}/local_requirements.txt"
-        state: present
-        virtualenv: "{{ netbox.path.base }}/venv"
-        virtualenv_python: "python{{ python_version }}"
-      become: true
-      become_user: "{{ netbox.user.name }}"
-      when: netbox_local_requirements.stat.exists | bool
+#     - name: Check if local_requirements.txt exist
+#       ansible.builtin.stat:
+#         path: "{{ netbox.path.base }}/local_requirements.txt"
+#       register: netbox_local_requirements
 
-    # We install and run Netbox from its own Python3 venv
-    - name: "Install pip requirements for Netbox v{{ netbox_version }} using venv"
-      ansible.builtin.pip:
-        requirements: "{{ netbox.path.base }}/requirements.txt"
-        state: present
-        virtualenv: "{{ netbox.path.base }}/venv"
-        virtualenv_python: "python{{ python_version }}"
-      become: true
-      become_user: "{{ netbox.user.name }}"
-  # END OF BLOCK
+#     - name: "Install pip local_requirements.txt"
+#       ansible.builtin.pip:
+#         requirements: "{{ netbox.path.base }}/local_requirements.txt"
+#         state: present
+#         virtualenv: "{{ netbox.path.base }}/venv"
+#         virtualenv_python: "python{{ python_version }}"
+#       become: true
+#       become_user: "{{ netbox.user.name }}"
+#       when: netbox_local_requirements.stat.exists | bool
+
+#     # We install and run Netbox from its own Python3 venv
+#     - name: "Install pip requirements for Netbox v{{ netbox_version }} using venv"
+#       ansible.builtin.pip:
+#         requirements: "{{ netbox.path.base }}/requirements.txt"
+#         state: present
+#         virtualenv: "{{ netbox.path.base }}/venv"
+#         virtualenv_python: "python{{ python_version }}"
+#       become: true
+#       become_user: "{{ netbox.user.name }}"
+#   # END OF BLOCK

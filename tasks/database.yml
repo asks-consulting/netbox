@@ -42,15 +42,13 @@
   become_user: "{{ netbox.config.database.admin_username }}"
   when: "netbox.config.database.name not in netbox_psql_info.databases"
 
-- name: "Grant our pgsql user {{ netbox.config.database.user }} ALL privileges on database {{ netbox.config.database.name }}"
-  community.postgresql.postgresql_user:
-    db: "{{ netbox.config.database.name }}"
-    priv: ALL
-    name: "{{ netbox.config.database.user }}"
-    password: "{{ netbox.config.database.pass }}"
-    encrypted: yes
+# Param 'priv' of module postgresql_user is deprecated.
+- name: "Grant all privileges on {{ netbox.config.database.name }} to user {{ netbox.config.database.user }}"
+  community.postgresql.postgresql_privs:
+    database: "{{ netbox.config.database.name }}"
+    type: database
+    privs: ALL
+    role: "{{ netbox.config.database.user }}"
     state: present
-    expires: infinity
-    port: "{{ netbox.config.database.port }}"
   become: true
   become_user: "{{ netbox.config.database.admin_username }}" # defined in group_vars

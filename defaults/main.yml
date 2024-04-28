@@ -16,7 +16,7 @@ netbox_default:
   restore:
     # to restore from database dump, set database: true
     database: false
-    # and put the database dump file in files/
+    # path to database dump, relative to files/ or as absolute path
     path: "netbox-v3.1.8.sql.gz"
   user:
     name: netbox
@@ -73,3 +73,7 @@ netbox_default:
 # set netbox_testing to true to enable debug messages
 # easiest via --extra-vars "{netbox_testing: true}"
 netbox_testing: false
+
+# host_restrictions==False by default to allow any tasks limited to run on specific
+# hosts in solarchemist's environment (in order to allow anyone to run the role as-is)
+host_restrictions: false
