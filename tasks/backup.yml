@@ -17,6 +17,14 @@
   ansible.builtin.set_fact:
     this_backup_tmp: "{{ ansible_env.HOME }}/.cache/{{ this_backup_name }}"
 
+- name: Stop Netbox services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - netbox.service
+    - netbox-rq.service
+
 
 - name: Backup working directory
   block:
@@ -24,7 +32,9 @@
     # https://docs.ansible.com/ansible/latest/collections/ansible/posix/synchronize_module.html
     # https://serverfault.com/a/717382
     # note: this task does not register destination path, only changed, cmd, failed, msg, rc
-    # this task can fail in interesting ways:
+    # This task produces a WARNING:
+    # > The connection's stdin object is deprecated. Call display.prompt_until(msg) instead.
+    # > This feature will be removed in version 2.19.
     - name: Copy the NetBox working directory to controller
       ansible.posix.synchronize:
         src: "{{ netbox.path.base }}/"
@@ -107,3 +117,12 @@
         path: "{{ this_backup_database_dump }}"
         state: absent
   # END OF BLOCK
+
+
+- name: Restart Netbox services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - netbox.service
+    - netbox-rq.service

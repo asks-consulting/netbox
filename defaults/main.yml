@@ -3,21 +3,14 @@
 netbox_default:
   # set a numeric version string, e.g., 3.1.8, or
   # set "latest" for the latest available release
-  version: "3.1.8"
+  version: "3.7.6"
   # minor NetBox releases (e.g., v3.1) are published three times a year. These
   # typically introduce major new features and may contain breaking API changes.
   path:
     base: /opt/netbox
     media: /opt/netbox/netbox/media
     static: /opt/netbox/netbox/static
-    tarball: "{{ ansible_env.HOME }}/.cache"
-  # this part should probably be broken out of the dict
-  # because how are we supposed to reset it from the CLI otherwise?
-  restore:
-    # to restore from database dump, set database: true
-    database: false
-    # path to database dump, relative to files/ or as absolute path
-    path: "netbox-v3.1.8.sql.gz"
+    downloads: "/tmp"
   user:
     name: netbox
     shell: /usr/sbin/nologin
@@ -55,8 +48,8 @@ netbox_default:
       pass: "secretpassword"
       from: postbot@example.com
     redis:
-      port: 0
-      host: "/var/run/redis.sock"
+      port: 6379
+      host: "localhost"
       # note! our Redis role does not configure authentication, password should be empty
       # https://github.com/netbox-community/netbox/discussions/7258
       password: ""
@@ -70,6 +63,15 @@ netbox_default:
 # set netbox_testing to true to enable debug messages
 # easiest via --extra-vars "{netbox_testing: true}"
 netbox_testing: false
+
+# --extra-vars '{netbox_restore: { overwrite: true, database: "<path>", workdir: "<path>" }}'
+netbox_restore:
+  # to restore from backup, set "overwrite: true" and specify both database and workdir
+  overwrite: false
+  # path to gzipped database dump, relative to files/ or an absolute path
+  database: "netbox-v3.7.6.sql.gz"
+  # path to gzipped tarball of basepath, relative to files/ or an absolute path
+  workdir: "netbox-v3.7.6.tgz"
 
 # host_restrictions==False by default to allow any tasks limited to run on specific
 # hosts in solarchemist's environment (in order to allow anyone to run the role as-is)

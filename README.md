@@ -127,3 +127,4 @@ $ bindfs --force-user=www-data --force-group=www-data \
 ## Links and notes
 
 + https://github.com/netbox-community/netbox
++ https://docs.netbox.dev/en/stable/getting-started/planning

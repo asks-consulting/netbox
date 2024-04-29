@@ -13,17 +13,36 @@
   block:
 
     - ansible.builtin.import_tasks: version-check.yml
-      tags: backups-only
+      tags:
+        - backups-only
+        - config-only
 
     - ansible.builtin.import_tasks: user.yml
-    - ansible.builtin.import_tasks: database.yml
-    - ansible.builtin.import_tasks: install.yml
+      tags: config-only
 
+    - ansible.builtin.import_tasks: database.yml
+      tags: config-only
+
+    - ansible.builtin.import_tasks: dependencies.yml
+
+    - ansible.builtin.import_tasks: restore.yml
+      when: netbox_restore.overwrite | bool
+
+    # not needed when restoring from backup
+    - ansible.builtin.import_tasks: install.yml
+      when: not (netbox_restore.overwrite | bool)
+
+    # not needed when restoring from backup
     - ansible.builtin.import_tasks: config/main.yml
+      when: not (netbox_restore.overwrite | bool)
+      tags: config-only
+
+    - ansible.builtin.import_tasks: config/systemd.yml
       tags: config-only
 
     - ansible.builtin.import_tasks: upgrade.yml
       when: >
+        (netbox_restore.overwrite | bool) or
         netbox_installer.changed or
         netbox_dir.changed or
         netbox_iversion != netbox_version
@@ -32,6 +51,8 @@
 
     - name: Backup database and working directory
       ansible.builtin.import_tasks: backup.yml
+      # no need to backup if we just restored from backup
+      when: not (netbox_restore.overwrite | bool)
       tags: backups-only
   # END OF BLOCK
 

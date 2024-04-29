@@ -1,0 +1,16 @@
+---
+
+# https://askubuntu.com/a/784627
+# https://github.com/python-pillow/Pillow/issues/1457#issuecomment-203583883
+- name: Install Netbox dependencies
+  ansible.builtin.apt:
+    name:
+      - build-essential
+      - libxml2-dev
+      - libxslt1-dev
+      - libffi-dev
+      - libpq-dev
+      - libssl-dev
+      - zlib1g-dev
+      # - libjpeg-dev
+    state: present

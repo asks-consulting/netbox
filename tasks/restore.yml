@@ -1,0 +1,108 @@
+---
+
+# in case we are restoring onto an existing Netbox, stop it first
+- name: Stop Netbox services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: stopped
+  loop:
+    - netbox.service
+    - netbox-rq.service
+  ignore_errors: true
+
+
+# restore dumped Netbox database sql file
+# https://stribny.name/blog/ansible-postgresql-backups
+# https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_db_module.html
+- name: Restore database
+  when: netbox_restore.database != ""
+  block:
+
+    - name: "Copy database dump to the target"
+      ansible.builtin.copy:
+        src: "{{ netbox_restore.database }}"
+        dest: "{{ netbox.path.downloads }}/{{ netbox_restore.database | basename }}"
+        owner: "{{ netbox.config.database.admin_username }}"
+        group: "{{ netbox.config.database.admin_username }}"
+        mode: 0755
+
+    - name: "Drop database {{ netbox.config.database.name }}"
+      community.postgresql.postgresql_db:
+        name: "{{ netbox.config.database.name }}"
+        encoding: UTF-8
+        state: absent
+      become: true
+      become_user: "{{ netbox.config.database.admin_username }}"
+
+    - name: "Create empty database {{ netbox.config.database.name }}"
+      community.postgresql.postgresql_db:
+        name: "{{ netbox.config.database.name }}"
+        encoding: UTF-8
+        state: present
+      become: true
+      become_user: "{{ netbox.config.database.admin_username }}"
+
+    # > Module "community.postgresql.postgresql_db" returned non UTF-8 data in the JSON response.
+    # > This will become an error in the future. This feature will be removed in version 2.18.
+    # Adding "encoding: UTF-8" had no effect.
+    - name: "Restore database"
+      community.postgresql.postgresql_db:
+        name: "{{ netbox.config.database.name }}"
+        state: restore
+        target: "{{ netbox.path.downloads }}/{{ netbox_restore.database | basename }}"
+      become: true
+      become_user: "{{ netbox.config.database.admin_username }}"
+
+    - name: Delete the database dump from the target
+      ansible.builtin.file:
+        path: "{{ netbox.path.downloads }}/{{ netbox_restore.database | basename }}"
+        state: absent
+  # END OF BLOCK
+
+
+- name: Restore working directory
+  block:
+
+    - name: "Copy tarball to the target"
+      ansible.builtin.copy:
+        src: "{{ netbox_restore.workdir }}"
+        dest: "{{ netbox.path.downloads }}/{{ netbox_restore.workdir | basename }}"
+        owner: "{{ netbox.user.name }}"
+        group: "{{ netbox.user.name }}"
+        mode: 0755
+
+    - name: Wipe existing directory {{ netbox.path.base }}
+      ansible.builtin.file:
+        path: "{{ netbox.path.base }}"
+        state: absent
+
+    - name: Create directory {{ netbox.path.base }}
+      ansible.builtin.file:
+        path: "{{ netbox.path.base }}"
+        state: directory
+        owner: "{{ netbox.user.name }}"
+        group: "{{ netbox.user.name }}"
+
+    - name: "Restore (unpack) tarball into {{ netbox.path.base }}"
+      ansible.builtin.unarchive:
+        src: "{{ netbox.path.downloads }}/{{ netbox_restore.workdir | basename }}"
+        dest: "{{ netbox.path.base }}"
+        remote_src: yes
+        owner: "{{ netbox.user.name }}"
+        group: "{{ netbox.user.name }}"
+
+    - name: Delete the tarball from the target
+      ansible.builtin.file:
+        path: "{{ netbox.path.downloads }}/{{ netbox_restore.workdir | basename }}"
+        state: absent
+  # END OF BLOCK
+
+
+- name: Restart Netbox services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    state: restarted
+  loop:
+    - netbox.service
+    - netbox-rq.service
+  ignore_errors: true

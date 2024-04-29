@@ -1,24 +1,9 @@
 ---
 
-# https://askubuntu.com/a/784627
-# https://github.com/python-pillow/Pillow/issues/1457#issuecomment-203583883
-- name: Install Netbox dependencies
-  ansible.builtin.apt:
-    name:
-      - build-essential
-      - libxml2-dev
-      - libxslt1-dev
-      - libffi-dev
-      - libpq-dev
-      - libssl-dev
-      - zlib1g-dev
-      # - libjpeg-dev
-    state: present
-
 - name: "Download Netbox tarball v{{ netbox_version }}"
   ansible.builtin.get_url:
     url: "https://github.com/netbox-community/netbox/archive/refs/tags/v{{ netbox_version }}.tar.gz"
-    dest: "{{ netbox.path.tarball }}"
+    dest: "{{ netbox.path.downloads }}"
     owner: "{{ ansible_env.USER }}"
     group: "{{ ansible_env.USER }}"
     mode: u=rw,go=r
