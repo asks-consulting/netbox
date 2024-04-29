@@ -22,7 +22,7 @@ On Ubuntu 22.04 in an LXC container.
     - { import_role: { name: postgres }, become: true, tags: postgres }
     # https://codeberg.org/ansible/redis
     - { import_role: { name: redis },    become: true, tags: redis }
-    # https://codeberg.org/ansible/netbox
+    # https://github.com/kommserv/netbox
     - { import_role: { name: netbox },   become: true, tags: netbox }
 ```
 
