@@ -1,0 +1,70 @@
+---
+
+# Create Python virtual environment for Netbox
+# https://docs.python.org/3/library/venv.html
+- name: "Create Python{{ python_major_version }} venv"
+  ansible.builtin.command: >
+    /usr/bin/python{{ python_major_version }}
+    -m venv
+    {{ netbox.path.base }}/venv
+  become: true
+  become_user: "{{ netbox.user.name }}"
+
+- name: Install necessary system packages in venv (wheel)
+  ansible.builtin.pip:
+    name: wheel
+    state: latest
+    virtualenv: "{{ netbox.path.base }}/venv"
+    virtualenv_python: "python{{ python_major_version }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+
+# https://github.com/pallets/markupsafe/issues/282
+- name: "Pin markupsafe<2.1.0 in requirements.txt (Python < v3.8)"
+  ansible.builtin.lineinfile:
+    path: "{{ netbox.path.base }}/requirements.txt"
+    line: "markupsafe<2.1.0"
+  when: python_version is version('3.8', '<')
+
+# requirements.txt
+- name: "Install required Python packages in venv"
+  ansible.builtin.pip:
+    requirements: "{{ netbox.path.base }}/requirements.txt"
+    state: present
+    virtualenv: "{{ netbox.path.base }}/venv"
+    virtualenv_python: "python{{ python_major_version }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+
+# local_requirements.txt
+- name: Check if local_requirements.txt exist
+  ansible.builtin.stat:
+    path: "{{ netbox.path.base }}/local_requirements.txt"
+  register: netbox_local_requirements
+
+- name: "Install optional packages (local_requirements.txt)"
+  ansible.builtin.pip:
+    requirements: "{{ netbox.path.base }}/local_requirements.txt"
+    state: present
+    virtualenv: "{{ netbox.path.base }}/venv"
+    virtualenv_python: "python{{ python_major_version }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+  when: netbox_local_requirements.stat.exists | bool
+
+# old_requirements.txt
+# NOTE: recent netbox versions don't use this file anymore
+- name: Check if old_requirements.txt exist
+  ansible.builtin.stat:
+    path: "{{ netbox.path.base }}/old_requirements.txt"
+  register: netbox_old_requirements
+
+- name: "Uninstall old pip requirements"
+  ansible.builtin.pip:
+    requirements: "{{ netbox.path.base }}/old_requirements.txt"
+    state: absent
+    virtualenv: "{{ netbox.path.base }}/venv"
+    virtualenv_python: "python{{ python_major_version }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+  when: netbox_old_requirements.stat.exists | bool

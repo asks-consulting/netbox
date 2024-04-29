@@ -57,9 +57,6 @@ netbox_default:
     redis:
       port: 0
       host: "/var/run/redis.sock"
-      # https://github.com/netbox-community/netbox/issues/4377
-      # this role hacks netbox's settings.py to force use of redis socket
-      socket: true
       # note! our Redis role does not configure authentication, password should be empty
       # https://github.com/netbox-community/netbox/discussions/7258
       password: ""

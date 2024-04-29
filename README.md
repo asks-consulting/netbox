@@ -1,32 +1,77 @@
 # NetBox
 
-This Ansible role is designed to run
-[NetBox](https://github.com/netbox-community/netbox)
-in an LXC container running Ubuntu 20.04 with
-[Python 3.8](https://codeberg.org/ansible/python3),
-[PostgreSQL 12.10](https://codeberg.org/ansible/postgres)
-and [Redis 5.0](https://codeberg.org/ansible/redis).
+This Ansible role installs NetBox in an LXC Ubuntu 22.04 container with
+PostgreSQL and Redis.
 
-Since the LXC server can see the filesystem of the container, we can
-save on some resources by not running any web server in the container itself.
-This approach was totally inspired by [@candlerb's setup](https://github.com/netbox-community/netbox/discussions/8598#discussioncomment-2147712).
-
-This role handles all steps of setting up a fresh NetBox instance or restoring
-from an existing database dump non-interactively, including superuser creation.
-
-This role employs an ugly hack in `settings.py` to force NetBox to
-use Redis via socket instead of port. I happen to have other services
-on the same container that already used Redis socket, so that's why.
-I don't expect this hack to survive a NetBox upgrade, so beware!
-Hopefully NetBox will support Redis sockets soon and we can retire this hack.
-
-I am grateful to the stellar documentation and helpful support forums
-of the NetBox project, without which I could not have completed this role
-nor kept NetBox running for several years.
+This role can setup a fresh NetBox instance or restore from an existing backup
+(a backup taken with this role).
 
 
-## Apache virtualhost config on LXC server
+## Example playbook
 
+On Ubuntu 22.04 in an LXC container.
+
+```
+- name: NetBox
+  hosts: all
+
+  tasks:
+    # https://codeberg.org/ansible/python3
+    - { import_role: { name: python3 },  become: true, tags: python3 }
+    # https://codeberg.org/ansible/postgres
+    - { import_role: { name: postgres }, become: true, tags: postgres }
+    # https://codeberg.org/ansible/redis
+    - { import_role: { name: redis },    become: true, tags: redis }
+    # https://codeberg.org/ansible/netbox
+    - { import_role: { name: netbox },   become: true, tags: netbox }
+```
+
+In `group_vars`/`host_vars` or similar:
+```
+psql_version: 14
+psql_admin_username: postgres
+
+redis:
+  port: 6379
+  packages:
+    - redis
+
+python_major_version: 3
+python_version: "3.10"
+
+netbox:
+  version: "latest"
+  config:
+    default_allowed_hosts: [ netbox.example.se ]
+    secret_key: "{{ lookup('community.general.passwordstore', 'netbox/secretkey') }}"
+    database:
+      name: netbox
+      user: netbox
+      pass: "{{ lookup('community.general.passwordstore', 'psql/users/netbox') }}"
+      host: localhost
+      port: 5432
+      admin_username: "{{ psql_admin_username }}"
+    superuser:
+      user: "{{ lookup('community.general.passwordstore', 'netbox/users/admin subkey=usr') }}"
+      email: "{{ lookup('community.general.passwordstore', 'netbox/users/admin subkey=email') }}"
+      name: "{{ lookup('community.general.passwordstore', 'netbox/users/admin subkey=name') }}"
+      pass: "{{ lookup('community.general.passwordstore', 'netbox/users/admin') }}"
+      api_token: "{{ lookup('community.general.passwordstore', 'netbox/info subkey=SUPERUSER_API_TOKEN') }}"
+    gunicorn:
+      host: "0.0.0.0"
+      port: 8001
+    mail:
+      server: "{{ lookup('community.general.passwordstore', 'netbox/info subkey=EMAIL_SERVER') }}"
+      port: 587
+      user: "{{ lookup('community.general.passwordstore', 'netbox/info subkey=EMAIL_USERNAME') }}"
+      pass: "{{ lookup('community.general.passwordstore', 'netbox/info subkey=EMAIL_PASSWORD') }}"
+      from: "{{ lookup('community.general.passwordstore', 'netbox/info subkey=EMAIL_FROM') }}"
+    redis:
+      port: 6379
+      host: "localhost"
+```
+
+Apache virtualhost config on the reverse proxy (i.e., the LXC hypervisor):
 ```
 <VirtualHost *:80>
    ServerAdmin webmaster@example.se
@@ -44,8 +89,8 @@ nor kept NetBox running for several years.
    ServerName netbox.example.se
 
    ProxyPreserveHost On
-   Alias /static /var/lib/lxd/containers/<container-name>/rootfs/opt/netbox/netbox/static/
-   <Directory /var/lib/lxd/containers/<container-name>/rootfs/opt/netbox/netbox/static/>
+   Alias /static /media/lxd/keelung/netbox/static/
+   <Directory /media/lxd/keelung/netbox/static/>
       Options Indexes FollowSymLinks MultiViews
       AllowOverride None
       Require all granted
@@ -56,8 +101,8 @@ nor kept NetBox running for several years.
    </Location>
 
    RequestHeader set "X-Forwarded-Proto" expr=%{REQUEST_SCHEME}
-   ProxyPass / http://<container-ip>:8001/
-   ProxyPassReverse / http://<container-ip>:8001/
+   ProxyPass / http://<container-ip>:{{ netbox.gunicorn.port }}/
+   ProxyPassReverse / http://<container-ip>:{{ netbox.gunicorn.port }}/
 
    SSLEngine on
    SSLCertificateKeyFile   /etc/letsencrypt/live/netbox.example.se/privkey.pem
@@ -69,53 +114,16 @@ nor kept NetBox running for several years.
 </VirtualHost>
 ```
 
-
-## Example playbook
-
+Note that the aliased paths only work because I **mounted** the `netbox/static`
+path from *inside* the container onto the hypervisor, like this:
 ```
-- name: Container NetBox
-  hosts: netbox
-
-  tasks:
-    # https://codeberg.org/ansible/common
-    - name: "setup: common"
-      import_role:
-        name: common
-      become: true
-      tags: common
-   # https://codeberg.org/ansible/common-systools
-    - name: "setup: common-systools"
-      import_role:
-        name: common-systools
-      become: true
-   # https://codeberg.org/ansible/locales
-    - name: "setup: locales"
-      import_role:
-        name: locales
-      become: true
-      tags: locales
-    # https://codeberg.org/ansible/ssh
-    - name: "ssh"
-      import_role:
-        name: ssh
-      become: true
-   # https://codeberg.org/ansible/dotfiles
-    - name: "dotfiles"
-      import_role:
-        name: dotfiles
-      tags: dotfiles
-   # https://github.com/kommserv/netbox
-    - name: "NetBox"
-      import_role:
-        name: netbox
-      become: true
-      tags: netbox
+$ sudo mkdir /media/lxd/<lxc-container-name>/netbox/static
+$ bindfs --force-user=www-data --force-group=www-data \
+  --create-for-user=www-data --create-for-group=www-data \
+  /var/snap/lxd/common/mntns/var/snap/lxd/common/lxd/storage-pools/default/containers/<lxc-container-name>/rootfs/opt/netbox/netbox/static /media/lxd/<lxc-container-name>/netbox/static
 ```
 
-Playbook-level variables:
-```
-psql_version: 12
-redis_socket.path: "/var/run/redis/redis-server.sock"
-php_version: 7.3
-backup_root_path: /storage/backup/
-```
+
+## Links and notes
+
++ https://github.com/netbox-community/netbox

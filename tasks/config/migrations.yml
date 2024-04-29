@@ -1,0 +1,10 @@
+---
+
+- name: Apply any database migrations
+  ansible.builtin.command: >
+    venv/bin/python{{ python_major_version }}
+    netbox/manage.py migrate
+  args:
+    chdir: "{{ netbox.path.base }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"

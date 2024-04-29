@@ -15,7 +15,8 @@
     comment: "NetBox user"
     system: yes
 
-# Add the netbox user to the redis group
-- name: Allow the netbox user to connect to the redis socket
-  ansible.builtin.command: usermod -a -G redis {{ netbox.user.name }}
-  when: netbox.config.redis.socket | bool
+# let's use redis port instead, should not need this
+# # Add the netbox user to the redis group
+# - name: Allow the netbox user to connect to the redis socket
+#   ansible.builtin.command: usermod -a -G redis {{ netbox.user.name }}
+#   when: netbox.config.redis.socket | bool

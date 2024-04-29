@@ -136,7 +136,7 @@ REDIS = {
       'DATABASE': 0,
       'DEFAULT_TIMEOUT': 300,
       'SSL': False,
-#    #'USE_SOCKET': {{ netbox.config.redis.socket }},
+      'USE_SOCKET': {% if netbox.config.redis.port != 0 %}False{% else %}True{% endif %},
    },
    'caching': {
       'HOST': '{{ netbox.config.redis.host }}',
@@ -145,7 +145,7 @@ REDIS = {
       'DATABASE': 1,
       'DEFAULT_TIMEOUT': 300,
       'SSL': False,
-#    #'USE_SOCKET': {{ netbox.config.redis.socket }},
+      'USE_SOCKET': {% if netbox.config.redis.port != 0 %}False{% else %}True{% endif %},
    },
 }
 

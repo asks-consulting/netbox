@@ -12,7 +12,7 @@
 - name: run housekeeping
   listen: restart netbox services
   ansible.builtin.command: >
-    venv/bin/python netbox/manage.py housekeeping
+    venv/bin/python{{ python_major_version}} netbox/manage.py housekeeping
   args:
     chdir: "{{ netbox.path.base }}"
   become: true

@@ -1,0 +1,94 @@
+---
+
+# https://docs.netbox.dev/en/stable/installation/3-netbox/#run-the-upgrade-script
+# - name: Run upgrade.sh
+#   ansible.builtin.shell: ./upgrade.sh
+#   args:
+#     chdir: "{{ netbox.path.base }}"
+#     executable: /bin/bash
+#   become: true
+
+# Below, Netbox's upgrade.sh script in ansiblified form
+
+- name: Remove the existing virtualenv (if any)
+  ansible.builtin.file:
+    path: "{{ netbox.path.base }}/venv"
+    state: absent
+
+# install the virtualenv
+- ansible.builtin.import_tasks: config/venv.yml
+
+- name: Upgrade pip in venv
+  ansible.builtin.pip:
+    name: pip
+    state: latest
+    virtualenv: "{{ netbox.path.base }}/venv"
+    virtualenv_python: "python{{ python_major_version }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+  notify: restart netbox services
+
+- ansible.builtin.import_tasks: config/migrations.yml
+
+- name: Trace any missing cable paths (not typically needed)
+  ansible.builtin.command: >
+    venv/bin/python{{ python_major_version }}
+    netbox/manage.py trace_paths --no-input
+  args:
+    chdir: "{{ netbox.path.base }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+  when: netbox_version is version('3.0', '>')
+  notify: restart netbox services
+
+- name: Build the local documentation
+  ansible.builtin.command: venv/bin/mkdocs build
+  args:
+    chdir: "{{ netbox.path.base }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+  notify: restart netbox services
+
+# collect static files at /opt/netbox/netbox/static (this will overwrite existing files)
+# requires configuration.py to exist!
+- name: Collect static files
+  ansible.builtin.command: >
+    venv/bin/python{{ python_major_version }}
+    netbox/manage.py collectstatic --no-input
+  args:
+    chdir: "{{ netbox.path.base }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+  notify: restart netbox services
+
+- name: Delete any stale content types
+  ansible.builtin.command: >
+    venv/bin/python{{ python_major_version }}
+    netbox/manage.py remove_stale_contenttypes --no-input
+  args:
+    chdir: "{{ netbox.path.base }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+  when: netbox_version is version('3.0', '>')
+  notify: restart netbox services
+
+- name: Rebuild the search cache (lazily)
+  ansible.builtin.command: >
+    venv/bin/python{{ python_major_version }}
+    netbox/manage.py reindex --lazy
+  args:
+    chdir: "{{ netbox.path.base }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+  notify: restart netbox services
+
+- name: Delete any expired user sessions
+  ansible.builtin.command: >
+    venv/bin/python{{ python_major_version }}
+    netbox/manage.py clearsessions
+  args:
+    chdir: "{{ netbox.path.base }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+  when: netbox_version is version('3.0', '>')
+  notify: restart netbox services

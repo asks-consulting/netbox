@@ -1,0 +1,50 @@
+---
+
+# restore dumped Netbox database sql file
+# https://stribny.name/blog/ansible-postgresql-backups
+# https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_db_module.html
+
+- name: "Copy database dump to the target"
+  ansible.builtin.copy:
+    src: "{{ netbox.restore.path }}"
+    dest: "{{ netbox.path.base }}/netbox.sql"
+    owner: "{{ netbox.user.name }}"
+    group: "{{ netbox.user.name }}"
+
+- name: "Drop database {{ netbox.config.database.name }}"
+  community.postgresql.postgresql_db:
+    name: "{{ netbox.config.database.name }}"
+    encoding: UTF-8
+    state: absent
+    owner: "{{ netbox.config.database.user }}"
+    port: "{{ netbox.config.database.port }}"
+  become: true
+  become_user: "{{ netbox.config.database.admin_username }}"
+
+- name: "Create empty database {{ netbox.config.database.name }}"
+  community.postgresql.postgresql_db:
+    name: "{{ netbox.config.database.name }}"
+    encoding: UTF-8
+    state: present
+    owner: "{{ netbox.config.database.user }}"
+    port: "{{ netbox.config.database.port }}"
+  become: true
+  become_user: "{{ netbox.config.database.admin_username }}"
+
+# > Module "community.postgresql.postgresql_db" returned non UTF-8 data in the JSON response.
+# > This will become an error in the future. This feature will be removed in version 2.18.
+# Adding "encoding: UTF-8" had no effect.
+- name: "Restore database"
+  community.postgresql.postgresql_db:
+    name: "{{ netbox.config.database.name }}"
+    owner: "{{ netbox.config.database.user }}"
+    port: "{{ netbox.config.database.port }}"
+    state: restore
+    target: "{{ netbox.path.base }}/netbox.sql"
+  become: true
+  become_user: "{{ netbox.config.database.admin_username }}"
+
+- name: Delete the dump from the target
+  ansible.builtin.file:
+    path: "{{ netbox.path.base }}/netbox.sql"
+    state: absent

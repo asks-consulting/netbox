@@ -1,0 +1,45 @@
+---
+
+# # https://github.com/netbox-community/netbox/discussions/7283#discussioncomment-7568626
+# # Nice approach, but NOT idempotent! Running a second time throws an error:
+# # > CommandError: Error: That username is already taken.
+# - name: Create superuser account
+#   ansible.builtin.command: >
+#     venv/bin/python{{ python_major_version }}
+#     netbox/manage.py
+#     createsuperuser --no-input
+#     --username {{ netbox.config.superuser.user }}
+#     --email {{ netbox.config.superuser.email }}
+#   environment:
+#     DJANGO_SUPERUSER_PASSWORD: "{{ netbox.config.superuser.pass }}"
+#   args:
+#     chdir: "{{ netbox.path.base }}"
+#   become: true
+#   become_user: "{{ netbox.user.name }}"
+#   no_log: "{% if netbox_testing | bool %}false{% else %}true{% endif %}"
+
+# create superuser non-interactively
+# https://github.com/netbox-community/netbox/discussions/7283
+# https://github.com/netbox-community/netbox-docker/blob/e021390568b21f09015d54ee6e2504b20991affa/docker/docker-entrypoint.sh#L60-L66
+- name: "Put superuser creation script on target"
+  ansible.builtin.template:
+    src: create_superuser.py.j2
+    dest: "{{ netbox.path.base }}/netbox/create_superuser.py"
+    owner: "{{ netbox.user.name }}"
+    group: "{{ netbox.user.name }}"
+    mode: u=rwx
+
+- name: Create superuser
+  ansible.builtin.shell: >
+    venv/bin/python{{ python_major_version }}
+    netbox/manage.py shell < netbox/create_superuser.py
+  args:
+    chdir: "{{ netbox.path.base }}"
+  become: true
+  become_user: "{{ netbox.user.name }}"
+
+# since this file contains admin password, wipe it from remote
+- name: "Remove superuser creation script"
+  ansible.builtin.file:
+    path: "{{ netbox.path.base }}/netbox/create_superuser.py"
+    state: absent

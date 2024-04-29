@@ -7,7 +7,7 @@
     name: gunicorn
     state: present
     virtualenv: "{{ netbox.path.base }}/venv"
-    virtualenv_python: "python{{ python_version }}"
+    virtualenv_python: "python{{ python_major_version }}"
   become: true
   become_user: "{{ netbox.user.name }}"
 
@@ -27,7 +27,7 @@
     group: root
     mode: u=rw,go=r
   loop:
-    - { src: netbox.service.j2, dest: /etc/systemd/system/netbox.service }
+    - { src: netbox.service.j2,    dest: /etc/systemd/system/netbox.service }
     - { src: netbox-rq.service.j2, dest: /etc/systemd/system/netbox-rq.service }
   notify: restart netbox services
 

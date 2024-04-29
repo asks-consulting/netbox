@@ -42,4 +42,4 @@
   register: netbox_installedv_cmd
 
 - ansible.builtin.set_fact:
-    netbox_iversion: "{{ netbox_installedv_cmd.stdout }}"
+    netbox_iversion: "{{ netbox_installedv_cmd.stdout | default('0.0') }}"

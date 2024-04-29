@@ -1,0 +1,42 @@
+---
+
+- ansible.builtin.import_tasks: config/restore.yml
+  when: netbox.restore.database | bool
+
+# https://netbox.readthedocs.io/en/stable/installation/3-netbox/#configuration
+- name: Apply Netbox configuration.py
+  ansible.builtin.template:
+    src: configuration.py.j2
+    dest: "{{ netbox.path.base }}/netbox/netbox/configuration.py"
+    owner: "{{ netbox.user.name }}"
+    group: "{{ netbox.user.name }}"
+    mode: ug=rw
+  notify: restart netbox services
+
+# superuser requires venv to exist
+- ansible.builtin.import_tasks: config/venv.yml
+# it is important to apply migrations at this point, otherwise
+# superuser creation fails with Django error such as
+# > django.db.utils.ProgrammingError: relation "auth_user" does not exist
+- ansible.builtin.import_tasks: config/migrations.yml
+- ansible.builtin.import_tasks: config/superuser.yml
+
+# let's implement the housekeeping cronjob as a systemd timer
+- name: Create systemd timer for Netbox housekeeping
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: u=rw,go=r
+  loop:
+    - netbox-housekeeping.service
+    - netbox-housekeeping.timer
+
+- name: Enable and start the Netbox housekeeping timer
+  ansible.builtin.systemd:
+    name: netbox-housekeeping.timer
+    enabled: yes
+    state: started
+    scope: system
+    daemon_reload: yes

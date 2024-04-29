@@ -19,7 +19,7 @@
     expires: infinity
     port: "{{ netbox.config.database.port }}"
   become: true
-  become_user: "{{ netbox.config.database.admin_username }}" # defined in group_vars and postgres/defaults
+  become_user: "{{ netbox.config.database.admin_username }}"
 
 # check what pgsql databases exist
 # https://docs.ansible.com/ansible/latest/collections/community/postgresql/postgresql_info_module.html
@@ -51,4 +51,4 @@
     role: "{{ netbox.config.database.user }}"
     state: present
   become: true
-  become_user: "{{ netbox.config.database.admin_username }}" # defined in group_vars
+  become_user: "{{ netbox.config.database.admin_username }}"
