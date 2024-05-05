@@ -26,6 +26,7 @@
     - netbox-rq.service
 
 
+# https://docs.netbox.dev/en/stable/administration/replicating-netbox
 - name: Backup working directory
   block:
 
