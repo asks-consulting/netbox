@@ -8,7 +8,7 @@
   local_action: >
     shell git -C {{ role_path }} log
     --pretty="Role '{{ role_name }}' last commit %h %ci by %cn" -1 >>
-    logbook-{{ inventory_hostname }}.log
+    log/{{ inventory_hostname }}.log
   args:
     chdir: "{{ playbook_dir }}"
   become: true

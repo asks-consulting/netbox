@@ -9,7 +9,6 @@
 
 
 - name: Setup NetBox
-  when: not (host_restrictions | bool) or group_names is not search("workstation")
   block:
 
     - ansible.builtin.import_tasks: version-check.yml
@@ -56,10 +55,6 @@
       tags: backups-only
   # END OF BLOCK
 
-
-- ansible.builtin.import_tasks: desktop-entry.yml
-  when: not (host_restrictions | bool) or group_names is search("workstation")
-  tags: desktop-entry
 
 - ansible.builtin.import_tasks: log-git-state.yml
   tags:

@@ -72,7 +72,3 @@ netbox_restore:
   database: "netbox-v3.7.6.sql.gz"
   # path to gzipped tarball of basepath, relative to files/ or an absolute path
   workdir: "netbox-v3.7.6.tgz"
-
-# host_restrictions==False by default to allow any tasks limited to run on specific
-# hosts in solarchemist's environment (in order to allow anyone to run the role as-is)
-host_restrictions: false

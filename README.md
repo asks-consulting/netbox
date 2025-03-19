@@ -115,7 +115,8 @@ Apache virtualhost config on the reverse proxy (i.e., the LXC hypervisor):
 ```
 
 Note that the aliased paths only work because I **mounted** the `netbox/static`
-path from *inside* the container onto the hypervisor, like this:
+path from *inside* the container onto the hypervisor, like this for example
+(the permanent mount is done in fstab - see the `mounts` role config in luxor's `host_vars`):
 ```
 $ sudo mkdir /media/lxd/<lxc-container-name>/netbox/static
 $ bindfs --force-user=www-data --force-group=www-data \
